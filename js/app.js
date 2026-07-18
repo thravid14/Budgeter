@@ -1,0 +1,511 @@
+/*
+  app.js
+  ------
+  Wires up clicks/forms to the db.js functions and render.js functions.
+*/
+
+let currentView = 'dashboard';
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${view}`));
+  refreshCurrentView();
+}
+
+async function refreshCurrentView() {
+  if (currentView === 'dashboard') await renderDashboard();
+  if (currentView === 'transactions') await renderTransactions();
+  if (currentView === 'bills') await renderBills();
+  if (currentView === 'budgets') await renderBudgets();
+  if (currentView === 'categories') await renderCategories();
+  if (currentView === 'accounts') await renderAccounts();
+  if (currentView === 'sync') await renderSync();
+}
+
+const overlay = document.getElementById('modal-overlay');
+const modalTitle = document.getElementById('modal-title');
+const modalBody = document.getElementById('modal-body');
+
+function openModal(title, bodyHtml) {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = bodyHtml;
+  overlay.classList.add('open');
+}
+function closeModal() {
+  overlay.classList.remove('open');
+  modalBody.innerHTML = '';
+}
+document.getElementById('modal-close').addEventListener('click', closeModal);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+/* ---------------- Add Transaction ---------------- */
+
+document.getElementById('btn-add-transaction').addEventListener('click', async () => {
+  const categories = await getCategories();
+  const accounts = await getAccounts();
+
+  if (accounts.length === 0) {
+    openModal('Add an account first', `<p class="empty-note">You need at least one account (e.g. "Cash") before adding transactions.</p>
+      <div class="form-actions"><button class="btn-primary" id="go-add-account">Add account</button></div>`);
+    document.getElementById('go-add-account').addEventListener('click', () => {
+      closeModal();
+      switchView('accounts');
+      document.getElementById('btn-add-account').click();
+    });
+    return;
+  }
+  if (categories.length === 0) {
+    openModal('Add a category first', `<p class="empty-note">You need at least one category (e.g. "Groceries") before adding transactions.</p>
+      <div class="form-actions"><button class="btn-primary" id="go-add-category">Add category</button></div>`);
+    document.getElementById('go-add-category').addEventListener('click', () => {
+      closeModal();
+      switchView('categories');
+      document.getElementById('btn-add-category').click();
+    });
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  openModal('Add transaction', `
+    <div class="kind-toggle" id="tx-kind-toggle">
+      <button type="button" class="selected expense" data-kind="expense">Expense</button>
+      <button type="button" class="income" data-kind="income">Income</button>
+    </div>
+    <div class="form-field" style="margin-top:14px">
+      <label>Amount</label>
+      <input type="number" step="0.01" min="0" id="tx-amount" placeholder="0.00" />
+    </div>
+    <div class="form-field">
+      <label>Note</label>
+      <input type="text" id="tx-note" placeholder="e.g. Tesco weekly shop" />
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Account</label>
+        <select id="tx-account">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+      <div class="form-field">
+        <label>Category</label>
+        <select id="tx-category">${categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Date</label>
+      <input type="date" id="tx-date" value="${today}" />
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="tx-cancel">Cancel</button>
+      <button class="btn-primary" id="tx-save">Save</button>
+    </div>
+  `);
+
+  let selectedKind = 'expense';
+  document.getElementById('tx-kind-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    selectedKind = btn.dataset.kind;
+    document.querySelectorAll('#tx-kind-toggle button').forEach(b => b.classList.toggle('selected', b === btn));
+  });
+
+  document.getElementById('tx-cancel').addEventListener('click', closeModal);
+  document.getElementById('tx-save').addEventListener('click', async () => {
+    const amount = document.getElementById('tx-amount').value;
+    if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
+
+    await addTransaction({
+      date: document.getElementById('tx-date').value || today,
+      amount,
+      kind: selectedKind,
+      accountId: document.getElementById('tx-account').value,
+      categoryId: document.getElementById('tx-category').value,
+      note: document.getElementById('tx-note').value.trim()
+    });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Add Transfer ---------------- */
+
+document.getElementById('btn-add-transfer').addEventListener('click', async () => {
+  const accounts = await getAccounts();
+
+  if (accounts.length < 2) {
+    openModal('Add another account first', `<p class="empty-note">You need at least two accounts to transfer money between them.</p>
+      <div class="form-actions"><button class="btn-primary" id="go-add-account-2">Add account</button></div>`);
+    document.getElementById('go-add-account-2').addEventListener('click', () => {
+      closeModal();
+      switchView('accounts');
+      document.getElementById('btn-add-account').click();
+    });
+    return;
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  openModal('Transfer between accounts', `
+    <div class="form-row">
+      <div class="form-field">
+        <label>From</label>
+        <select id="tr-from">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+      <div class="form-field">
+        <label>To</label>
+        <select id="tr-to">${accounts.map((a, i) => `<option value="${a.id}" ${i === 1 ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Amount</label>
+      <input type="number" step="0.01" min="0" id="tr-amount" placeholder="0.00" />
+    </div>
+    <div class="form-field">
+      <label>Note (optional)</label>
+      <input type="text" id="tr-note" placeholder="e.g. Moving to savings" />
+    </div>
+    <div class="form-field">
+      <label>Date</label>
+      <input type="date" id="tr-date" value="${today}" />
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="tr-cancel">Cancel</button>
+      <button class="btn-primary" id="tr-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('tr-cancel').addEventListener('click', closeModal);
+  document.getElementById('tr-save').addEventListener('click', async () => {
+    const amount = document.getElementById('tr-amount').value;
+    const fromAccountId = document.getElementById('tr-from').value;
+    const toAccountId = document.getElementById('tr-to').value;
+    if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
+    if (fromAccountId === toAccountId) { alert('Choose two different accounts.'); return; }
+
+    await addTransfer({
+      date: document.getElementById('tr-date').value || today,
+      amount,
+      fromAccountId,
+      toAccountId,
+      note: document.getElementById('tr-note').value.trim()
+    });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Add Category ---------------- */
+
+const CATEGORY_COLORS = ['#C9A227', '#5FB88A', '#C1543C', '#7C93C9', '#B37FC4', '#D68C45'];
+
+document.getElementById('btn-add-category').addEventListener('click', () => {
+  openModal('Add category', `
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="cat-name" placeholder="e.g. Groceries" />
+    </div>
+    <div class="kind-toggle" id="cat-kind-toggle">
+      <button type="button" class="selected expense" data-kind="expense">Expense</button>
+      <button type="button" class="income" data-kind="income">Income</button>
+    </div>
+    <div class="form-field" style="margin-top:14px">
+      <label>Colour</label>
+      <div style="display:flex;gap:8px">
+        ${CATEGORY_COLORS.map((c, i) => `<span class="tag-dot color-swatch" data-color="${c}" style="background:${c};width:24px;height:24px;cursor:pointer;border:2px solid ${i === 0 ? '#fff' : 'transparent'}"></span>`).join('')}
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="cat-cancel">Cancel</button>
+      <button class="btn-primary" id="cat-save">Save</button>
+    </div>
+  `);
+
+  let selectedKind = 'expense';
+  let selectedColor = CATEGORY_COLORS[0];
+
+  document.getElementById('cat-kind-toggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    selectedKind = btn.dataset.kind;
+    document.querySelectorAll('#cat-kind-toggle button').forEach(b => b.classList.toggle('selected', b === btn));
+  });
+
+  document.querySelectorAll('.color-swatch').forEach(sw => {
+    sw.addEventListener('click', () => {
+      selectedColor = sw.dataset.color;
+      document.querySelectorAll('.color-swatch').forEach(s => s.style.border = '2px solid transparent');
+      sw.style.border = '2px solid #fff';
+    });
+  });
+
+  document.getElementById('cat-cancel').addEventListener('click', closeModal);
+  document.getElementById('cat-save').addEventListener('click', async () => {
+    const name = document.getElementById('cat-name').value.trim();
+    if (!name) { alert('Enter a category name.'); return; }
+    await addCategory({ name, kind: selectedKind, color: selectedColor });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Add Account ---------------- */
+
+document.getElementById('btn-add-account').addEventListener('click', () => {
+  openModal('Add account', `
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="acc-name" placeholder="e.g. Current account" />
+    </div>
+    <div class="form-field">
+      <label>Type</label>
+      <select id="acc-type">
+        <option value="current">Current account</option>
+        <option value="savings">Savings account</option>
+        <option value="credit">Credit card</option>
+        <option value="cash">Cash</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Starting balance</label>
+      <input type="number" step="0.01" id="acc-balance" placeholder="0.00" />
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="acc-cancel">Cancel</button>
+      <button class="btn-primary" id="acc-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('acc-cancel').addEventListener('click', closeModal);
+  document.getElementById('acc-save').addEventListener('click', async () => {
+    const name = document.getElementById('acc-name').value.trim();
+    if (!name) { alert('Enter an account name.'); return; }
+    await addAccount({
+      name,
+      type: document.getElementById('acc-type').value,
+      startingBalance: document.getElementById('acc-balance').value || 0
+    });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Add Bill ---------------- */
+
+document.getElementById('btn-add-bill').addEventListener('click', async () => {
+  const categories = await getCategories();
+  const accounts = await getAccounts();
+
+  if (accounts.length === 0 || categories.length === 0) {
+    openModal('Set up accounts & categories first', `<p class="empty-note">You need at least one account and one category before adding a bill.</p>`);
+    return;
+  }
+
+  openModal('Add bill', `
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="bill-name" placeholder="e.g. Rent, Netflix" />
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Amount</label>
+        <input type="number" step="0.01" min="0" id="bill-amount" placeholder="0.00" />
+      </div>
+      <div class="form-field">
+        <label>Due day of month</label>
+        <input type="number" min="1" max="31" id="bill-due-day" placeholder="e.g. 1" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Account</label>
+        <select id="bill-account">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+      <div class="form-field">
+        <label>Category</label>
+        <select id="bill-category">${categories.filter(c => c.kind === 'expense').map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="bill-cancel">Cancel</button>
+      <button class="btn-primary" id="bill-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('bill-cancel').addEventListener('click', closeModal);
+  document.getElementById('bill-save').addEventListener('click', async () => {
+    const name = document.getElementById('bill-name').value.trim();
+    const amount = document.getElementById('bill-amount').value;
+    const dueDay = document.getElementById('bill-due-day').value;
+    if (!name) { alert('Enter a bill name.'); return; }
+    if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
+    if (!dueDay || dueDay < 1 || dueDay > 31) { alert('Enter a due day between 1 and 31.'); return; }
+
+    await addBill({
+      name,
+      amount,
+      dueDay,
+      accountId: document.getElementById('bill-account').value,
+      categoryId: document.getElementById('bill-category').value
+    });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Add Budget ---------------- */
+
+document.getElementById('btn-add-budget').addEventListener('click', async () => {
+  const categories = (await getCategories()).filter(c => c.kind === 'expense');
+  const existingBudgets = await getBudgets();
+  const available = categories.filter(c => !existingBudgets.some(b => b.categoryId === c.id));
+
+  if (categories.length === 0) {
+    openModal('Add an expense category first', `<p class="empty-note">You need at least one expense category before setting a budget.</p>`);
+    return;
+  }
+  if (available.length === 0) {
+    openModal('All set', `<p class="empty-note">Every expense category already has a budget. Delete one first to change it.</p>`);
+    return;
+  }
+
+  openModal('Add budget', `
+    <div class="form-field">
+      <label>Category</label>
+      <select id="bud-category">${available.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
+    </div>
+    <div class="form-field">
+      <label>Monthly limit</label>
+      <input type="number" step="0.01" min="0" id="bud-amount" placeholder="0.00" />
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="bud-cancel">Cancel</button>
+      <button class="btn-primary" id="bud-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('bud-cancel').addEventListener('click', closeModal);
+  document.getElementById('bud-save').addEventListener('click', async () => {
+    const amount = document.getElementById('bud-amount').value;
+    if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
+    await addBudget({
+      categoryId: document.getElementById('bud-category').value,
+      amount
+    });
+    closeModal();
+    refreshCurrentView();
+  });
+});
+
+/* ---------------- Delete / pay / unpay actions (event delegation) ---------------- */
+
+document.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const id = Number(btn.dataset.id);
+
+  if (btn.dataset.action === 'delete-tx') {
+    if (confirm('Delete this transaction?')) { await deleteTransaction(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'delete-category') {
+    if (confirm('Delete this category? Existing transactions will keep it as text only.')) { await deleteCategory(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'delete-account') {
+    if (confirm('Delete this account?')) { await deleteAccount(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'delete-bill') {
+    if (confirm('Delete this bill? Past transactions from it are kept.')) { await deleteBill(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'delete-transfer') {
+    if (confirm('Delete this transfer?')) { await deleteTransfer(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'delete-budget') {
+    if (confirm('Delete this budget?')) { await deleteBudget(id); refreshCurrentView(); }
+  }
+  if (btn.dataset.action === 'pay-bill') {
+    const today = new Date().toISOString().slice(0, 10);
+    await markBillPaid(id, today);
+    refreshCurrentView();
+  }
+  if (btn.dataset.action === 'unpay-bill') {
+    const month = btn.dataset.month;
+    await markBillUnpaid(id, month);
+    refreshCurrentView();
+  }
+
+  if (btn.dataset.action === 'setup-sync') {
+    const passphrase = document.getElementById('sync-passphrase').value;
+    const confirmPassphrase = document.getElementById('sync-passphrase-confirm').value;
+    const note = document.getElementById('sync-note');
+    note.style.display = 'block';
+
+    if (!passphrase || passphrase.length < 8) {
+      note.textContent = 'Use a passphrase of at least 8 characters.';
+      return;
+    }
+    if (passphrase !== confirmPassphrase) {
+      note.textContent = "Passphrases don't match — try again.";
+      return;
+    }
+    if (typeof window.setupSync !== 'function') {
+      note.textContent = 'Still connecting to sync — check you\'re online and try again in a moment.';
+      return;
+    }
+    note.textContent = 'Setting up…';
+    try {
+      await window.setupSync(passphrase);
+      refreshCurrentView();
+    } catch (err) {
+      note.textContent = 'Something went wrong: ' + err.message;
+    }
+  }
+
+  if (btn.dataset.action === 'sync-now') {
+    const note = document.getElementById('sync-note');
+    note.style.display = 'block';
+    if (typeof window.syncNow !== 'function') {
+      note.textContent = 'Still connecting to sync — check you\'re online and try again in a moment.';
+      return;
+    }
+    note.textContent = 'Syncing…';
+    try {
+      await window.syncNow();
+      refreshCurrentView();
+    } catch (err) {
+      note.textContent = 'Sync failed: ' + err.message;
+    }
+  }
+
+  if (btn.dataset.action === 'forget-sync') {
+    if (confirm('Forget sync on this device? Your local data stays as-is, but this device will stop syncing until you enter the passphrase again.')) {
+      window.forgetSyncOnThisDevice();
+      refreshCurrentView();
+    }
+  }
+});
+
+/* ---------------- Transaction filters ---------------- */
+
+['filter-account', 'filter-category', 'filter-month'].forEach(id => {
+  document.getElementById(id).addEventListener('change', async () => {
+    const [txs, transfers, categories, accounts] = await Promise.all([
+      getTransactions(), getTransfers(), getCategories(), getAccounts()
+    ]);
+    applyTransactionFilters(txs, transfers, categories, accounts);
+  });
+});
+
+/* ---------------- Service worker (enables offline) ---------------- */
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.log('Service worker failed:', err));
+  });
+}
+
+/* ---------------- Initial load ---------------- */
+
+renderDashboard();
