@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budgeter-v12';
+const CACHE_NAME = 'budgeter-v13';
 
 const FILES_TO_CACHE = [
   './',
@@ -7,6 +7,7 @@ const FILES_TO_CACHE = [
   './css/styles.css',
   './js/db.js',
   './js/i18n.js',
+  './js/settings.js',
   './js/render.js',
   './js/app.js',
   './js/sync.js',

@@ -54,6 +54,7 @@ function renderSparkline(values, width, height) {
 }
 
 async function renderDashboard() {
+  applyDashboardLayout();
   const month = currentMonthStr();
   document.getElementById('month-label').textContent = monthLabel(month);
 
@@ -460,6 +461,53 @@ function renderSync() {
       <p class="empty-note" id="sync-note" style="display:none;margin-top:14px"></p>
     `;
   }
+}
+
+/* ---------------- Settings page ---------------- */
+
+function settingsRowHtml({ key, label, checked, isFirst, isLast, group }) {
+  return `
+    <div class="settings-row">
+      <label class="settings-check">
+        <input type="checkbox" data-action="toggle-${group}-visible" data-key="${key}" ${checked ? 'checked' : ''} />
+        <span>${escapeHtml(label)}</span>
+      </label>
+      <div class="settings-move">
+        <button class="icon-btn" data-action="move-${group}-up" data-key="${key}" aria-label="Move up" ${isFirst ? 'disabled' : ''}>↑</button>
+        <button class="icon-btn" data-action="move-${group}-down" data-key="${key}" aria-label="Move down" ${isLast ? 'disabled' : ''}>↓</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderSettingsPage() {
+  const navSettings = getNavSettings();
+  const navById = Object.fromEntries(NAV_REGISTRY.map(i => [i.id, i]));
+  const navIds = navSettings.order.filter(id => navById[id]);
+  NAV_DEFAULT_ORDER.forEach(id => { if (!navIds.includes(id)) navIds.push(id); });
+
+  document.getElementById('settings-nav-list').innerHTML = navIds.map((id, i) => settingsRowHtml({
+    key: id,
+    label: t(navById[id].labelKey),
+    checked: !navSettings.hidden.includes(id),
+    isFirst: i === 0,
+    isLast: i === navIds.length - 1,
+    group: 'nav'
+  })).join('');
+
+  const dashSettings = getDashboardSettings();
+  const dashById = Object.fromEntries(DASHBOARD_REGISTRY.map(p => [p.id, p]));
+  const dashIds = dashSettings.order.filter(id => dashById[id]);
+  DASHBOARD_DEFAULT_ORDER.forEach(id => { if (!dashIds.includes(id)) dashIds.push(id); });
+
+  document.getElementById('settings-dashboard-list').innerHTML = dashIds.map((id, i) => settingsRowHtml({
+    key: id,
+    label: t(dashById[id].labelKey),
+    checked: !dashSettings.hidden.includes(id),
+    isFirst: i === 0,
+    isLast: i === dashIds.length - 1,
+    group: 'dashboard'
+  })).join('');
 }
 
 /* ---------------- Share summaries ----------------

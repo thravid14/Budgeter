@@ -22,7 +22,15 @@ const translations = {
     nav: {
       dashboard: 'Dashboard', transactions: 'Transactions', bills: 'Bills',
       budgets: 'Budgets', trends: 'Trends', networth: 'Net worth',
-      categories: 'Categories', accounts: 'Accounts', sync: 'Sync', help: 'Help'
+      categories: 'Categories', accounts: 'Accounts', sync: 'Sync', help: 'Help', settings: 'Settings'
+    },
+    settings: {
+      title: 'Settings', sub: 'Choose which tabs and dashboard sections are shown, and their order',
+      navHeading: 'Navigation tabs', navBody: 'Dashboard and Settings are always available.',
+      dashboardHeading: 'Dashboard panels',
+      dashboardBody: 'Choose which sections appear on your Dashboard, and their order.',
+      panelSummary: 'Summary cards', reset: 'Reset to defaults',
+      resetDone: 'Layout reset to defaults.'
     },
     dashboard: {
       balance: 'Total balance', income: 'Income (this month)', expense: 'Expenses (this month)',
@@ -131,7 +139,15 @@ const translations = {
     nav: {
       dashboard: 'Panel', transactions: 'Transacciones', bills: 'Facturas',
       budgets: 'Presupuestos', trends: 'Tendencias', networth: 'Patrimonio neto',
-      categories: 'Categorías', accounts: 'Cuentas', sync: 'Sincronización', help: 'Ayuda'
+      categories: 'Categorías', accounts: 'Cuentas', sync: 'Sincronización', help: 'Ayuda', settings: 'Ajustes'
+    },
+    settings: {
+      title: 'Ajustes', sub: 'Elige qué pestañas y secciones del panel se muestran, y en qué orden',
+      navHeading: 'Pestañas de navegación', navBody: 'Panel y Ajustes están siempre disponibles.',
+      dashboardHeading: 'Secciones del panel',
+      dashboardBody: 'Elige qué secciones aparecen en tu Panel, y en qué orden.',
+      panelSummary: 'Tarjetas de resumen', reset: 'Restablecer valores predeterminados',
+      resetDone: 'Diseño restablecido a los valores predeterminados.'
     },
     dashboard: {
       balance: 'Saldo total', income: 'Ingresos (este mes)', expense: 'Gastos (este mes)',

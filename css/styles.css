@@ -400,6 +400,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .help-field-list dt:first-child { margin-top: 0; }
 .help-field-list dd { margin: 4px 0 0; color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; }
 
+/* ===== Settings ===== */
+.settings-list { display: flex; flex-direction: column; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 6px; border-bottom: 1px dashed var(--line);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-check { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; cursor: pointer; }
+.settings-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--gold); }
+.settings-move { display: flex; gap: 6px; }
+.settings-move .icon-btn:disabled { opacity: 0.3; cursor: default; }
+
 /* ===== Toasts ===== */
 #toast-container {
   position: fixed;
