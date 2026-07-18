@@ -270,14 +270,19 @@ function signedAmount(tx) {
   return tx.kind === 'expense' ? -tx.amount : tx.amount;
 }
 
-async function getAccountBalance(accountId) {
+// asOfDateStr (optional, 'YYYY-MM-DD') limits the balance to activity on or
+// before that date — used by net worth history to reconstruct past balances.
+// Leave it out for the current, all-time balance.
+async function getAccountBalance(accountId, asOfDateStr) {
   const account = await db.accounts.get(accountId);
   if (!account) return 0;
   const txs = await db.transactions.where('accountId').equals(accountId).toArray();
-  const txTotal = txs.reduce((sum, t) => sum + signedAmount(t), 0);
+  const relevantTxs = asOfDateStr ? txs.filter(t => t.date <= asOfDateStr) : txs;
+  const txTotal = relevantTxs.reduce((sum, t) => sum + signedAmount(t), 0);
 
   const transfers = await db.transfers.toArray();
-  const transferTotal = transfers.reduce((sum, tr) => {
+  const relevantTransfers = asOfDateStr ? transfers.filter(tr => tr.date <= asOfDateStr) : transfers;
+  const transferTotal = relevantTransfers.reduce((sum, tr) => {
     if (tr.fromAccountId === accountId) return sum - tr.amount;
     if (tr.toAccountId === accountId) return sum + tr.amount;
     return sum;
@@ -295,12 +300,59 @@ async function getTotalBalance() {
   return total;
 }
 
+// Splits accounts into assets (everything except credit cards) and
+// liabilities (credit card accounts, normally negative), as of a given date.
+async function getNetWorthAsOf(asOfDateStr) {
+  const accounts = await getAccounts();
+  let assets = 0;
+  let liabilities = 0;
+  for (const acc of accounts) {
+    const balance = await getAccountBalance(acc.id, asOfDateStr);
+    if (acc.type === 'credit' || acc.type === 'card') liabilities += balance;
+    else assets += balance;
+  }
+  return { assets, liabilities, netWorth: assets + liabilities };
+}
+
+// Net worth reconstructed at the end of each of the last numMonths months
+// (oldest first), by replaying account balances as of each month-end.
+async function getNetWorthTrend(numMonths) {
+  const now = new Date();
+  const results = [];
+  for (let i = numMonths - 1; i >= 0; i--) {
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+    const monthStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}`;
+    const asOfDateStr = `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`;
+    const { assets, liabilities, netWorth } = await getNetWorthAsOf(asOfDateStr);
+    results.push({ month: monthStr, assets, liabilities, netWorth });
+  }
+  return results;
+}
+
 async function getMonthTotals(monthStr) {
   const txs = await db.transactions.toArray();
   const inMonth = txs.filter(t => t.date.startsWith(monthStr));
   const income = inMonth.filter(t => t.kind === 'income').reduce((s, t) => s + t.amount, 0);
   const expense = inMonth.filter(t => t.kind === 'expense').reduce((s, t) => s + t.amount, 0);
   return { income, expense };
+}
+
+// Returns income/expense/net for each of the last numMonths months
+// (oldest first), for the Trends page.
+async function getMonthlyTrends(numMonths) {
+  const now = new Date();
+  const months = [];
+  for (let i = numMonths - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  }
+
+  const results = [];
+  for (const monthStr of months) {
+    const { income, expense } = await getMonthTotals(monthStr);
+    results.push({ month: monthStr, income, expense, net: income - expense });
+  }
+  return results;
 }
 
 async function getCategoryBreakdown(monthStr) {

@@ -6,6 +6,37 @@
 
 let currentView = 'dashboard';
 
+/* ---------------- Theme toggle ---------------- */
+
+function applyThemeIcon() {
+  const isLight = document.documentElement.dataset.theme === 'light';
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+}
+applyThemeIcon();
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem('budgeter_theme', next);
+  applyThemeIcon();
+});
+
+/* ---------------- Language toggle ---------------- */
+
+function updateLangToggleLabel() {
+  document.getElementById('lang-toggle').textContent = currentLang === 'en' ? 'ES' : 'EN';
+}
+document.documentElement.lang = currentLang;
+updateLangToggleLabel();
+
+document.getElementById('lang-toggle').addEventListener('click', () => {
+  const next = currentLang === 'en' ? 'es' : 'en';
+  document.documentElement.lang = next;
+  setLanguage(next);
+  updateLangToggleLabel();
+});
+
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
@@ -22,6 +53,8 @@ async function refreshCurrentView() {
   if (currentView === 'transactions') await renderTransactions();
   if (currentView === 'bills') await renderBills();
   if (currentView === 'budgets') await renderBudgets();
+  if (currentView === 'trends') await renderTrends();
+  if (currentView === 'networth') await renderNetWorth();
   if (currentView === 'categories') await renderCategories();
   if (currentView === 'accounts') await renderAccounts();
   if (currentView === 'sync') await renderSync();
@@ -31,17 +64,117 @@ const overlay = document.getElementById('modal-overlay');
 const modalTitle = document.getElementById('modal-title');
 const modalBody = document.getElementById('modal-body');
 
+let lastFocusedBeforeModal = null;
+
+function getFocusableInModal() {
+  return Array.from(document.querySelectorAll(
+    '#modal-overlay.open .modal button, #modal-overlay.open .modal input, #modal-overlay.open .modal select, #modal-overlay.open .modal textarea, #modal-overlay.open .modal [tabindex]'
+  )).filter(el => !el.disabled && el.offsetParent !== null);
+}
+
 function openModal(title, bodyHtml) {
+  lastFocusedBeforeModal = document.activeElement;
   modalTitle.textContent = title;
   modalBody.innerHTML = bodyHtml;
   overlay.classList.add('open');
+  const focusable = getFocusableInModal();
+  if (focusable.length) focusable[0].focus();
 }
 function closeModal() {
   overlay.classList.remove('open');
-  modalBody.innerHTML = '';
+  overlay.classList.add('closing');
+  if (lastFocusedBeforeModal) lastFocusedBeforeModal.focus();
+  setTimeout(() => {
+    overlay.classList.remove('closing');
+    if (!overlay.classList.contains('open')) modalBody.innerHTML = '';
+  }, 150);
 }
 document.getElementById('modal-close').addEventListener('click', closeModal);
 overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+/* ---------------- Toasts ---------------- */
+
+function showToast(message) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+  container.appendChild(toast);
+  requestAnimationFrame(() => toast.classList.add('show'));
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+/* ---------------- Share ---------------- */
+
+// Uses the OS share sheet where available (mostly mobile); falls back to
+// copying the summary to the clipboard, and to an alert as a last resort.
+async function shareOrCopy(text, title) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // user cancelled the share sheet
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(t('toast.summaryCopied'));
+  } catch (err) {
+    alert(text);
+  }
+}
+
+document.getElementById('btn-share-networth').addEventListener('click', async () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const [current, history] = await Promise.all([getNetWorthAsOf(today), getNetWorthTrend(6)]);
+  await shareOrCopy(buildNetWorthShareText(current, history), 'My net worth — Budgeter');
+});
+
+document.getElementById('btn-share-budgets').addEventListener('click', async () => {
+  const budgets = await getBudgetsWithProgress(currentMonthStr());
+  await shareOrCopy(buildBudgetsShareText(budgets), 'My budgets — Budgeter');
+});
+
+document.getElementById('btn-share-transactions').addEventListener('click', async () => {
+  const [txs, transfers] = await Promise.all([getTransactions(), getTransfers()]);
+  const accId = document.getElementById('filter-account').value;
+  const catId = document.getElementById('filter-category').value;
+  const month = document.getElementById('filter-month').value;
+  let entries = combineLedgerEntries(txs, transfers);
+  if (accId) {
+    const id = Number(accId);
+    entries = entries.filter(e => e.entryType === 'transaction' ? e.accountId === id : (e.fromAccountId === id || e.toAccountId === id));
+  }
+  if (catId) entries = entries.filter(e => e.entryType === 'transaction' && e.categoryId === Number(catId));
+  if (month) entries = entries.filter(e => e.date.startsWith(month));
+  await shareOrCopy(buildTransactionsShareText(entries), 'My transactions summary — Budgeter');
+});
+
+// Esc closes the modal; Tab/Shift+Tab is trapped inside it while open.
+document.addEventListener('keydown', (e) => {
+  if (!overlay.classList.contains('open')) return;
+  if (e.key === 'Escape') {
+    closeModal();
+    return;
+  }
+  if (e.key === 'Tab') {
+    const focusable = getFocusableInModal();
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+});
 
 /* ---------------- Add Transaction ---------------- */
 
@@ -72,7 +205,7 @@ document.getElementById('btn-add-transaction').addEventListener('click', async (
 
   const today = new Date().toISOString().slice(0, 10);
 
-  openModal('Add transaction', `
+  openModal(t('modalTitle.addTransaction'), `
     <div class="kind-toggle" id="tx-kind-toggle">
       <button type="button" class="selected expense" data-kind="expense">Expense</button>
       <button type="button" class="income" data-kind="income">Income</button>
@@ -128,6 +261,7 @@ document.getElementById('btn-add-transaction').addEventListener('click', async (
     });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.transactionAdded'));
   });
 });
 
@@ -149,7 +283,7 @@ document.getElementById('btn-add-transfer').addEventListener('click', async () =
 
   const today = new Date().toISOString().slice(0, 10);
 
-  openModal('Transfer between accounts', `
+  openModal(t('modalTitle.addTransfer'), `
     <div class="form-row">
       <div class="form-field">
         <label>From</label>
@@ -195,7 +329,54 @@ document.getElementById('btn-add-transfer').addEventListener('click', async () =
     });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.transferAdded'));
   });
+});
+
+/* ---------------- CSV export/import (Transactions) ---------------- */
+
+document.getElementById('btn-export-csv').addEventListener('click', async () => {
+  const [txs, categories, accounts] = await Promise.all([getTransactions(), getCategories(), getAccounts()]);
+  if (txs.length === 0) { alert('No transactions to export yet.'); return; }
+
+  const csv = transactionsToCSV(txs, categories, accounts);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `budgeter-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(t('toast.csvExported'));
+});
+
+document.getElementById('btn-import-csv').addEventListener('click', () => {
+  document.getElementById('csv-file-input').click();
+});
+
+document.getElementById('csv-file-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ''; // allow re-selecting the same file later
+  if (!file) return;
+
+  const text = await file.text();
+  const [categories, accounts] = await Promise.all([getCategories(), getAccounts()]);
+  const { imported, skipped } = parseTransactionsCSV(text, categories, accounts);
+
+  for (const tx of imported) {
+    await addTransaction(tx);
+  }
+  refreshCurrentView();
+
+  if (skipped.length === 0) {
+    showToast(`Imported ${imported.length} transaction${imported.length === 1 ? '' : 's'}.`);
+  } else {
+    const reasons = skipped.slice(0, 5).map(s => `• ${s.reason}`).join('\n');
+    const more = skipped.length > 5 ? `\n…and ${skipped.length - 5} more` : '';
+    alert(`Imported ${imported.length} transaction${imported.length === 1 ? '' : 's'}.\n\nSkipped ${skipped.length} row${skipped.length === 1 ? '' : 's'}:\n${reasons}${more}`);
+  }
 });
 
 /* ---------------- Add Category ---------------- */
@@ -203,7 +384,7 @@ document.getElementById('btn-add-transfer').addEventListener('click', async () =
 const CATEGORY_COLORS = ['#C9A227', '#5FB88A', '#C1543C', '#7C93C9', '#B37FC4', '#D68C45'];
 
 document.getElementById('btn-add-category').addEventListener('click', () => {
-  openModal('Add category', `
+  openModal(t('modalTitle.addCategory'), `
     <div class="form-field">
       <label>Name</label>
       <input type="text" id="cat-name" placeholder="e.g. Groceries" />
@@ -249,13 +430,14 @@ document.getElementById('btn-add-category').addEventListener('click', () => {
     await addCategory({ name, kind: selectedKind, color: selectedColor });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.categoryAdded'));
   });
 });
 
 /* ---------------- Add Account ---------------- */
 
 document.getElementById('btn-add-account').addEventListener('click', () => {
-  openModal('Add account', `
+  openModal(t('modalTitle.addAccount'), `
     <div class="form-field">
       <label>Name</label>
       <input type="text" id="acc-name" placeholder="e.g. Current account" />
@@ -290,6 +472,7 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
     });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.accountAdded'));
   });
 });
 
@@ -304,7 +487,7 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
     return;
   }
 
-  openModal('Add bill', `
+  openModal(t('modalTitle.addBill'), `
     <div class="form-field">
       <label>Name</label>
       <input type="text" id="bill-name" placeholder="e.g. Rent, Netflix" />
@@ -353,6 +536,7 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
     });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.billAdded'));
   });
 });
 
@@ -372,7 +556,7 @@ document.getElementById('btn-add-budget').addEventListener('click', async () => 
     return;
   }
 
-  openModal('Add budget', `
+  openModal(t('modalTitle.addBudget'), `
     <div class="form-field">
       <label>Category</label>
       <select id="bud-category">${available.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
@@ -397,6 +581,7 @@ document.getElementById('btn-add-budget').addEventListener('click', async () => 
     });
     closeModal();
     refreshCurrentView();
+    showToast(t('toast.budgetAdded'));
   });
 });
 
@@ -408,32 +593,34 @@ document.addEventListener('click', async (e) => {
   const id = Number(btn.dataset.id);
 
   if (btn.dataset.action === 'delete-tx') {
-    if (confirm('Delete this transaction?')) { await deleteTransaction(id); refreshCurrentView(); }
+    if (confirm('Delete this transaction?')) { await deleteTransaction(id); refreshCurrentView(); showToast(t('toast.transactionDeleted')); }
   }
   if (btn.dataset.action === 'delete-category') {
-    if (confirm('Delete this category? Existing transactions will keep it as text only.')) { await deleteCategory(id); refreshCurrentView(); }
+    if (confirm('Delete this category? Existing transactions will keep it as text only.')) { await deleteCategory(id); refreshCurrentView(); showToast(t('toast.categoryDeleted')); }
   }
   if (btn.dataset.action === 'delete-account') {
-    if (confirm('Delete this account?')) { await deleteAccount(id); refreshCurrentView(); }
+    if (confirm('Delete this account?')) { await deleteAccount(id); refreshCurrentView(); showToast(t('toast.accountDeleted')); }
   }
   if (btn.dataset.action === 'delete-bill') {
-    if (confirm('Delete this bill? Past transactions from it are kept.')) { await deleteBill(id); refreshCurrentView(); }
+    if (confirm('Delete this bill? Past transactions from it are kept.')) { await deleteBill(id); refreshCurrentView(); showToast(t('toast.billDeleted')); }
   }
   if (btn.dataset.action === 'delete-transfer') {
-    if (confirm('Delete this transfer?')) { await deleteTransfer(id); refreshCurrentView(); }
+    if (confirm('Delete this transfer?')) { await deleteTransfer(id); refreshCurrentView(); showToast(t('toast.transferDeleted')); }
   }
   if (btn.dataset.action === 'delete-budget') {
-    if (confirm('Delete this budget?')) { await deleteBudget(id); refreshCurrentView(); }
+    if (confirm('Delete this budget?')) { await deleteBudget(id); refreshCurrentView(); showToast(t('toast.budgetDeleted')); }
   }
   if (btn.dataset.action === 'pay-bill') {
     const today = new Date().toISOString().slice(0, 10);
     await markBillPaid(id, today);
     refreshCurrentView();
+    showToast(t('toast.billPaid'));
   }
   if (btn.dataset.action === 'unpay-bill') {
     const month = btn.dataset.month;
     await markBillUnpaid(id, month);
     refreshCurrentView();
+    showToast(t('toast.billUnpaid'));
   }
 
   if (btn.dataset.action === 'setup-sync') {
@@ -508,4 +695,5 @@ if ('serviceWorker' in navigator) {
 
 /* ---------------- Initial load ---------------- */
 
+applyStaticTranslations();
 renderDashboard();

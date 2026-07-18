@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Budgeter — Personal Budget</title>
 
+<script>
+  // Applied before CSS loads so there's no flash of the wrong theme.
+  document.documentElement.dataset.theme = localStorage.getItem('budgeter_theme') || 'dark';
+</script>
+
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#0F1B14" />
 <link rel="icon" href="icons/icon-192.png" />
@@ -19,6 +24,12 @@
 </head>
 <body>
 
+<button id="lang-toggle" class="icon-btn" aria-label="Switch language">ES</button>
+<button id="theme-toggle" class="icon-btn" aria-label="Toggle light/dark theme">
+  <svg id="theme-icon-dark" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5" y1="5" x2="6.8" y2="6.8"/><line x1="17.2" y1="17.2" x2="19" y2="19"/><line x1="19" y1="5" x2="17.2" y2="6.8"/><line x1="6.8" y1="17.2" x2="5" y2="19"/></svg>
+  <svg id="theme-icon-light" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="display:none"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z"/></svg>
+</button>
+
 <div id="app">
 
   <nav id="nav">
@@ -28,31 +39,43 @@
     </div>
     <button class="nav-btn active" data-view="dashboard">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
-      <span>Dashboard</span>
+      <span data-i18n="nav.dashboard">Dashboard</span>
     </button>
     <button class="nav-btn" data-view="transactions">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/></svg>
-      <span>Transactions</span>
+      <span data-i18n="nav.transactions">Transactions</span>
     </button>
     <button class="nav-btn" data-view="bills">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="3" width="16" height="18" rx="1.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/></svg>
-      <span>Bills</span>
+      <span data-i18n="nav.bills">Bills</span>
     </button>
     <button class="nav-btn" data-view="budgets">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
-      <span>Budgets</span>
+      <span data-i18n="nav.budgets">Budgets</span>
+    </button>
+    <button class="nav-btn" data-view="trends">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19h16"/><path d="M4 19l5-6 4 3 6-9"/></svg>
+      <span data-i18n="nav.trends">Trends</span>
+    </button>
+    <button class="nav-btn" data-view="networth">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 15s1 1.5 3 1.5 3-1 3-2-1-1.5-3-1.5-3-0.5-3-1.5 1-2 3-2 3 1.5 3 1.5"/><line x1="12" y1="6" x2="12" y2="7.3"/><line x1="12" y1="16.7" x2="12" y2="18"/></svg>
+      <span data-i18n="nav.networth">Net worth</span>
     </button>
     <button class="nav-btn" data-view="categories">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l8 8-9 9-8-8 3-9z"/><circle cx="9.5" cy="9.5" r="1.4" fill="currentColor" stroke="none"/></svg>
-      <span>Categories</span>
+      <span data-i18n="nav.categories">Categories</span>
     </button>
     <button class="nav-btn" data-view="accounts">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 10l9-6 9 6"/><rect x="5" y="10" width="14" height="9" rx="1"/><line x1="5" y1="19" x2="19" y2="19"/></svg>
-      <span>Accounts</span>
+      <span data-i18n="nav.accounts">Accounts</span>
     </button>
     <button class="nav-btn" data-view="sync">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 2l4 4-4 4"/><path d="M21 6H8a5 5 0 0 0-5 5"/><path d="M7 22l-4-4 4-4"/><path d="M3 18h13a5 5 0 0 0 5-5"/></svg>
-      <span>Sync</span>
+      <span data-i18n="nav.sync">Sync</span>
+    </button>
+    <button class="nav-btn" data-view="help">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 4"/><line x1="12" y1="17" x2="12" y2="17.01"/></svg>
+      <span data-i18n="nav.help">Help</span>
     </button>
   </nav>
 
@@ -60,53 +83,60 @@
 
     <section id="view-dashboard" class="view active">
       <header class="view-header">
-        <h1>Dashboard</h1>
+        <h1 data-i18n="nav.dashboard">Dashboard</h1>
         <p class="sub" id="month-label"></p>
       </header>
 
       <div class="summary-row">
         <div class="summary-card">
-          <span class="summary-label">Total balance</span>
+          <span class="summary-label" data-i18n="dashboard.balance">Total balance</span>
           <span class="summary-value" id="stat-balance">£0.00</span>
+          <div class="sparkline-wrap" id="balance-sparkline"></div>
         </div>
         <div class="summary-card income">
-          <span class="summary-label">Income (this month)</span>
+          <span class="summary-label" data-i18n="dashboard.income">Income (this month)</span>
           <span class="summary-value" id="stat-income">£0.00</span>
         </div>
         <div class="summary-card expense">
-          <span class="summary-label">Expenses (this month)</span>
+          <span class="summary-label" data-i18n="dashboard.expense">Expenses (this month)</span>
           <span class="summary-value" id="stat-expense">£0.00</span>
         </div>
       </div>
 
       <div class="panel">
-        <h2>Upcoming bills</h2>
+        <h2 data-i18n="dashboard.upcomingBills">Upcoming bills</h2>
         <div id="upcoming-bills" class="ledger-list"></div>
       </div>
 
       <div class="panel">
-        <h2>Spending by category <span class="sub">this month</span></h2>
+        <h2><span data-i18n="dashboard.spendingByCategory">Spending by category</span> <span class="sub" data-i18n="dashboard.thisMonth">this month</span></h2>
         <div id="category-breakdown" class="breakdown-list"></div>
       </div>
 
       <div class="panel">
-        <h2>Recent transactions</h2>
+        <h2 data-i18n="dashboard.recentTransactions">Recent transactions</h2>
         <div id="recent-list" class="ledger-list"></div>
       </div>
     </section>
 
     <section id="view-transactions" class="view">
       <header class="view-header">
-        <h1>Transactions</h1>
+        <h1 data-i18n="transactions.title">Transactions</h1>
         <div class="header-actions">
-          <button class="btn-secondary" id="btn-add-transfer">+ Transfer</button>
-          <button class="btn-primary" id="btn-add-transaction">+ Add transaction</button>
+          <button class="icon-btn" id="btn-share-transactions" aria-label="Share">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </button>
+          <button class="btn-secondary" id="btn-export-csv" data-i18n="transactions.exportCsv">Export CSV</button>
+          <button class="btn-secondary" id="btn-import-csv" data-i18n="transactions.importCsv">Import CSV</button>
+          <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" />
+          <button class="btn-secondary" id="btn-add-transfer" data-i18n="transactions.addTransfer">+ Transfer</button>
+          <button class="btn-primary" id="btn-add-transaction" data-i18n="transactions.addTransaction">+ Add transaction</button>
         </div>
       </header>
 
       <div class="filter-row">
-        <select id="filter-account"><option value="">All accounts</option></select>
-        <select id="filter-category"><option value="">All categories</option></select>
+        <select id="filter-account"><option value="" data-i18n="transactions.allAccounts">All accounts</option></select>
+        <select id="filter-category"><option value="" data-i18n="transactions.allCategories">All categories</option></select>
         <input type="month" id="filter-month" />
       </div>
 
@@ -115,44 +145,190 @@
 
     <section id="view-bills" class="view">
       <header class="view-header">
-        <h1>Bills</h1>
+        <h1 data-i18n="bills.title">Bills</h1>
         <p class="sub" id="bills-month-label"></p>
-        <button class="btn-primary" id="btn-add-bill">+ Add bill</button>
+        <button class="btn-primary" id="btn-add-bill" data-i18n="bills.addBill">+ Add bill</button>
       </header>
       <div id="bill-list" class="ledger-list full"></div>
     </section>
 
     <section id="view-budgets" class="view">
       <header class="view-header">
-        <h1>Budgets</h1>
+        <h1 data-i18n="budgets.title">Budgets</h1>
         <p class="sub" id="budgets-month-label"></p>
-        <button class="btn-primary" id="btn-add-budget">+ Add budget</button>
+        <div class="header-actions">
+          <button class="icon-btn" id="btn-share-budgets" aria-label="Share">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+          </button>
+          <button class="btn-primary" id="btn-add-budget" data-i18n="budgets.addBudget">+ Add budget</button>
+        </div>
       </header>
       <div id="budget-list" class="budget-grid"></div>
     </section>
 
+    <section id="view-trends" class="view">
+      <header class="view-header">
+        <h1 data-i18n="trends.title">Trends</h1>
+        <p class="sub" data-i18n="trends.sub">Income vs expenses, last 6 months</p>
+      </header>
+      <div class="panel">
+        <div class="trend-legend">
+          <span class="legend-item"><span class="tag-dot" style="background:var(--income)"></span><span data-i18n="trends.income">Income</span></span>
+          <span class="legend-item"><span class="tag-dot" style="background:var(--expense)"></span><span data-i18n="trends.expenses">Expenses</span></span>
+        </div>
+        <div id="trend-chart" class="trend-chart"></div>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="trends.byMonth">By month</h2>
+        <div id="trend-list" class="ledger-list"></div>
+      </div>
+    </section>
+
+    <section id="view-networth" class="view">
+      <header class="view-header">
+        <h1 data-i18n="networth.title">Net worth</h1>
+        <p class="sub" data-i18n="networth.sub">What you own minus what you owe</p>
+        <button class="icon-btn" id="btn-share-networth" aria-label="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        </button>
+      </header>
+      <div class="summary-row">
+        <div class="summary-card income">
+          <span class="summary-label" data-i18n="networth.assets">Assets</span>
+          <span class="summary-value" id="nw-assets">£0.00</span>
+        </div>
+        <div class="summary-card expense">
+          <span class="summary-label" data-i18n="networth.liabilities">Liabilities</span>
+          <span class="summary-value" id="nw-liabilities">£0.00</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-label" data-i18n="networth.netWorth">Net worth</span>
+          <span class="summary-value" id="nw-total">£0.00</span>
+        </div>
+      </div>
+      <div class="panel">
+        <h2><span data-i18n="networth.overTime">Net worth over time</span> <span class="sub" data-i18n="networth.last6Months">last 6 months</span></h2>
+        <div id="networth-chart" class="trend-chart"></div>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="networth.byMonth">By month</h2>
+        <div id="networth-list" class="ledger-list"></div>
+      </div>
+    </section>
+
     <section id="view-categories" class="view">
       <header class="view-header">
-        <h1>Categories</h1>
-        <button class="btn-primary" id="btn-add-category">+ Add category</button>
+        <h1 data-i18n="categories.title">Categories</h1>
+        <button class="btn-primary" id="btn-add-category" data-i18n="categories.addCategory">+ Add category</button>
       </header>
       <div id="category-list" class="tag-grid"></div>
     </section>
 
     <section id="view-accounts" class="view">
       <header class="view-header">
-        <h1>Accounts</h1>
-        <button class="btn-primary" id="btn-add-account">+ Add account</button>
+        <h1 data-i18n="accounts.title">Accounts</h1>
+        <button class="btn-primary" id="btn-add-account" data-i18n="accounts.addAccount">+ Add account</button>
       </header>
       <div id="account-list" class="card-grid"></div>
     </section>
 
     <section id="view-sync" class="view">
       <header class="view-header">
-        <h1>Sync</h1>
-        <p class="sub">Keep your phone and desktop in step — encrypted so only you can read it.</p>
+        <h1 data-i18n="sync.title">Sync</h1>
+        <p class="sub" data-i18n="sync.sub">Keep your phone and desktop in step — encrypted so only you can read it.</p>
       </header>
       <div class="panel" id="sync-panel"></div>
+    </section>
+
+    <section id="view-help" class="view">
+      <header class="view-header">
+        <h1 data-i18n="help.title">Help</h1>
+        <p class="sub" data-i18n="help.sub">What everything does, in plain language</p>
+      </header>
+
+      <div class="panel">
+        <h2 data-i18n="help.dashboardHeading">Dashboard</h2>
+        <p data-i18n="help.dashboardBody">Your at-a-glance overview: total balance across all accounts (with a
+          small trend line showing the last 6 months), this month's income and
+          expenses, upcoming bills, a breakdown of spending by category, and
+          your most recent transactions.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.transactionsHeading">Transactions</h2>
+        <p data-i18n="help.transactionsBody">The full history of money in and out. Add income or expenses,
+          transfer money between your own accounts, filter by account,
+          category, or month, and export or import your transaction history
+          as a CSV file.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.billsHeading">Bills</h2>
+        <p data-i18n="help.billsBody">Recurring expenses like rent, subscriptions, or utilities. Add a
+          bill once with its amount, due day, and which account/category it
+          comes from — each month it shows as due, overdue, or paid.
+          "Mark paid" creates a real transaction; "Undo" removes it if you
+          tapped by mistake.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.budgetsHeading">Budgets</h2>
+        <p data-i18n="help.budgetsBody">Set a monthly £ limit for a spending category (e.g. £200 for
+          Groceries). The progress bar fills up as you spend during the
+          month and turns red if you go over — one budget per category.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.trendsHeading">Trends</h2>
+        <p data-i18n="help.trendsBody">Income vs expenses over the last 6 months, as a chart and a
+          month-by-month list, so you can spot patterns beyond just the
+          current month.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.networthHeading">Net worth</h2>
+        <p data-i18n="help.networthBody">What you own minus what you owe: account balances added up as
+          assets, credit card balances counted as liabilities, plus how
+          that's changed over the last 6 months.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.categoriesHeading">Categories</h2>
+        <p data-i18n="help.categoriesBody">Tags for your transactions (e.g. Groceries, Salary), each marked
+          as income or expense with a colour used throughout the charts.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.accountsHeading">Accounts</h2>
+        <p data-i18n="help.accountsBody">Your current accounts, savings accounts, credit cards, and cash —
+          each with a starting balance. Budgeter works out the running
+          balance from that starting point plus every transaction and
+          transfer since.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.syncHeading">Sync</h2>
+        <p data-i18n="help.syncBody">Keep your phone and desktop in step. Your data is encrypted on
+          your device before it's ever sent anywhere — set a passphrase
+          once, enter the same one on your other device, and they'll share
+          the same (encrypted) data.</p>
+      </div>
+
+      <div class="panel">
+        <h2 data-i18n="help.fieldGuideHeading">Field guide</h2>
+        <dl class="help-field-list">
+          <dt data-i18n="help.startingBalanceTerm">Starting balance</dt>
+          <dd data-i18n="help.startingBalanceDef">The balance an account had before you started tracking it in
+            Budgeter — everything from then on is worked out automatically
+            from your transactions and transfers.</dd>
+          <dt data-i18n="help.accountTypeTerm">Account type</dt>
+          <dd data-i18n="help.accountTypeDef">Just a label (Current, Savings, Credit card, Cash) — it
+            doesn't change how the maths works, except that Credit card
+            balances count as liabilities on the Net worth page.</dd>
+          <dt data-i18n="help.dueDayTerm">Due day (Bills)</dt>
+          <dd data-i18n="help.dueDayDef">The day of the month a bill is due, e.g. 1 for the 1st. In a
+            shorter month, it's treated as due on that month's last day.</dd>
+          <dt data-i18n="help.categoryColourTerm">Category colour</dt>
+          <dd data-i18n="help.categoryColourDef">Used to tell categories apart in the spending breakdown and
+            budget charts — purely visual, doesn't affect any totals.</dd>
+          <dt data-i18n="help.syncPassphraseTerm">Sync passphrase</dt>
+          <dd data-i18n="help.syncPassphraseDef">Encrypts your data and links your devices together. There's no
+            "forgot passphrase" recovery, by design — write it down
+            somewhere safe.</dd>
+        </dl>
+      </div>
     </section>
 
   </main>
@@ -168,7 +344,10 @@
   </div>
 </div>
 
+<div id="toast-container" aria-live="polite"></div>
+
 <script src="js/db.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/render.js"></script>
 <script src="js/app.js"></script>
 <script type="module" src="js/sync.js"></script>

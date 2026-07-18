@@ -46,6 +46,40 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   * { transition: none !important; animation: none !important; }
 }
 
+/* ===== Theme toggle ===== */
+#theme-toggle {
+  position: fixed;
+  top: 16px; right: 16px;
+  z-index: 60;
+  width: 34px; height: 34px;
+  background: var(--surface);
+}
+#lang-toggle {
+  position: fixed;
+  top: 16px; right: 58px;
+  z-index: 60;
+  width: 34px; height: 34px;
+  background: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* ===== Light theme override ===== */
+:root[data-theme="light"] {
+  --bg: #F4F0E4;
+  --surface: #FFFFFF;
+  --surface-raised: #F0EAD8;
+  --line: #DDD4BC;
+  --text: #241F14;
+  --text-dim: #766F5C;
+  --gold: #9C7419;
+  --income: #2F7A50;
+  --expense: #A23D28;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+  --shadow-md: 0 6px 20px rgba(0,0,0,0.12);
+}
+:root[data-theme="light"] .btn-primary { color: #FFF8E8; }
+
 /* ===== App shell ===== */
 #app { display: flex; min-height: 100vh; }
 
@@ -93,15 +127,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 /* ===== Main content ===== */
 #main { flex: 1; padding: 32px 40px 100px; max-width: 900px; }
 
-.view { display: none; animation: fadeIn 0.2s var(--ease); }
+.view { display: none; animation: fadeIn 0.25s var(--ease); }
 .view.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 .view-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 22px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -109,7 +143,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .header-actions { display: flex; gap: 10px; }
 
 /* ===== Summary cards ===== */
-.summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
+.summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
 .summary-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -126,14 +160,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .summary-value { font-family: var(--font-mono); font-size: 1.4rem; }
 .summary-card.income .summary-value { color: var(--income); }
 .summary-card.expense .summary-value { color: var(--expense); }
+.sparkline-wrap { margin-top: 8px; height: 24px; color: var(--gold); opacity: 0.85; }
+.sparkline-wrap svg { width: 100%; height: 100%; display: block; }
 
 /* ===== Panels ===== */
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: 20px 22px;
-  margin-bottom: 20px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -177,6 +213,51 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .breakdown-bar-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .breakdown-bar-fill { height: 100%; background: var(--gold); transition: width 0.3s var(--ease); }
 .breakdown-bar-fill.over { background: var(--expense); }
+
+/* ===== Trends / Net worth charts ===== */
+.trend-legend { display: flex; gap: 18px; margin-bottom: 16px; font-size: 0.8rem; color: var(--text-dim); }
+.trend-legend .legend-item { display: flex; align-items: center; gap: 6px; }
+.trend-chart { position: relative; display: flex; align-items: flex-end; gap: 8px; height: 190px; padding-top: 20px; }
+.trend-chart::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 22px;
+  height: 160px;
+  background-image: repeating-linear-gradient(to top, var(--line) 0, var(--line) 1px, transparent 1px, transparent 25%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+.trend-month { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; height: 100%; justify-content: flex-end; }
+.trend-bars { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 160px; }
+.trend-bar {
+  width: 16px;
+  border-radius: 3px 3px 0 0;
+  transition: height 0.4s var(--ease);
+  animation: barGrow 0.5s var(--ease) backwards;
+}
+@keyframes barGrow { from { height: 0 !important; } }
+.trend-bar.income { background: var(--income); }
+.trend-bar.expense { background: var(--expense); }
+.trend-bar.networth { background: var(--gold); width: 28px; }
+.trend-bar-value {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+.trend-month-label { position: relative; font-size: 0.7rem; color: var(--text-dim); }
+
+.trend-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 6px; margin: 0 -6px; border-bottom: 1px dashed var(--line); }
+.trend-row:last-child { border-bottom: none; }
+.trend-row .trend-name { font-size: 0.92rem; }
+.trend-row .trend-figures { display: flex; gap: 16px; }
+.trend-row .trend-figures .ledger-amount { min-width: 70px; text-align: right; }
 
 /* ===== Budgets ===== */
 .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
@@ -253,6 +334,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 .account-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.account-card .acc-type-icon { width: 22px; height: 22px; color: var(--gold); margin-bottom: 8px; opacity: 0.9; }
 .account-card .acc-name { font-size: 0.95rem; margin-bottom: 4px; }
 .account-card .acc-type { font-size: 0.75rem; color: var(--text-dim); margin-bottom: 10px; }
 .account-card .acc-balance { font-family: var(--font-mono); font-size: 1.2rem; }
@@ -291,8 +373,13 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   z-index: 50;
   padding: 16px;
 }
-.modal-overlay.open { display: flex; animation: overlayIn 0.15s var(--ease); }
+.modal-overlay.open, .modal-overlay.closing { display: flex; }
+.modal-overlay.open { animation: overlayIn 0.15s var(--ease); }
+.modal-overlay.closing { animation: overlayOut 0.15s var(--ease) forwards; }
+.modal-overlay.closing .modal { animation: modalOut 0.15s var(--ease) forwards; }
 @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes overlayOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modalOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(8px) scale(0.98); } }
 .modal {
   background: var(--surface-raised);
   border: 1px solid var(--line);
@@ -307,13 +394,51 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 @keyframes modalIn { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 
+/* ===== Help ===== */
+.help-field-list { margin: 0; }
+.help-field-list dt { font-weight: 600; color: var(--gold); margin-top: 14px; }
+.help-field-list dt:first-child { margin-top: 0; }
+.help-field-list dd { margin: 4px 0 0; color: var(--text-dim); font-size: 0.9rem; line-height: 1.5; }
+
+/* ===== Toasts ===== */
+#toast-container {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-md);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
 /* ===== Responsive: bottom tab bar on narrow / mobile screens ===== */
 @media (max-width: 720px) {
   #app { flex-direction: column; }
+  #toast-container { bottom: 96px; }
   #nav {
     width: 100%;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
     border-right: none;
     border-top: 1px solid var(--line);
     padding: 8px 4px;
@@ -323,11 +448,15 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     background: var(--surface);
     z-index: 40;
   }
+  #nav::-webkit-scrollbar { display: none; }
   .brand { display: none; }
-  .nav-btn { flex-direction: column; gap: 3px; font-size: 0.65rem; padding: 6px 8px; flex: 1; }
+  .nav-btn { flex: 0 0 auto; min-width: 68px; flex-direction: column; gap: 4px; font-size: 0.65rem; padding: 8px 10px; }
   .nav-icon { width: 20px; height: 20px; }
   #main { order: 1; padding: 20px 16px 90px; max-width: 100%; }
+  .view-header { padding-right: 98px; }
   .summary-row { grid-template-columns: 1fr; }
+  .icon-btn { width: 34px; height: 34px; font-size: 0.85rem; }
+  .btn-sm { padding: 8px 14px; }
 }
 
 /* ===== Bills ===== */
