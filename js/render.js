@@ -508,6 +508,14 @@ function renderSettingsPage() {
     isLast: i === dashIds.length - 1,
     group: 'dashboard'
   })).join('');
+
+  const customColors = getCustomColors();
+  document.getElementById('settings-colors-list').innerHTML = THEME_COLOR_REGISTRY.map(c => `
+    <div class="settings-row">
+      <span>${escapeHtml(t(c.labelKey))}</span>
+      <input type="color" data-action="set-colour" data-key="${c.key}" value="${customColors[c.key] || c.fallback}" />
+    </div>
+  `).join('');
 }
 
 /* ---------------- Share summaries ----------------

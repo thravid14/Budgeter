@@ -30,7 +30,10 @@ const translations = {
       dashboardHeading: 'Dashboard panels',
       dashboardBody: 'Choose which sections appear on your Dashboard, and their order.',
       panelSummary: 'Summary cards', reset: 'Reset to defaults',
-      resetDone: 'Layout reset to defaults.'
+      resetDone: 'Layout reset to defaults.',
+      coloursHeading: 'Theme colours',
+      coloursBody: 'Pick your own accent, income, and expense colours — used throughout the app, including charts.',
+      colourAccent: 'Accent', colourIncome: 'Income', colourExpense: 'Expense'
     },
     dashboard: {
       balance: 'Total balance', income: 'Income (this month)', expense: 'Expenses (this month)',
@@ -147,7 +150,10 @@ const translations = {
       dashboardHeading: 'Secciones del panel',
       dashboardBody: 'Elige qué secciones aparecen en tu Panel, y en qué orden.',
       panelSummary: 'Tarjetas de resumen', reset: 'Restablecer valores predeterminados',
-      resetDone: 'Diseño restablecido a los valores predeterminados.'
+      resetDone: 'Diseño restablecido a los valores predeterminados.',
+      coloursHeading: 'Colores del tema',
+      coloursBody: 'Elige tus propios colores de acento, ingresos y gastos — usados en toda la app, incluidos los gráficos.',
+      colourAccent: 'Acento', colourIncome: 'Ingresos', colourExpense: 'Gastos'
     },
     dashboard: {
       balance: 'Saldo total', income: 'Ingresos (este mes)', expense: 'Gastos (este mes)',

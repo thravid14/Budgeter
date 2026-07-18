@@ -702,11 +702,12 @@ document.addEventListener('click', async (e) => {
   }
 
   if (btn.dataset.action === 'reset-settings') {
-    if (confirm('Reset tabs and dashboard layout to their defaults?')) {
+    if (confirm('Reset tabs, dashboard layout, and theme colours to their defaults?')) {
       resetLayoutSettings();
       renderNavBar();
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
       applyDashboardLayout();
+      applyCustomColors();
       renderSettingsPage();
       showToast(t('settings.resetDone'));
     }
@@ -744,6 +745,13 @@ document.addEventListener('change', (e) => {
     saveDashboardSettings(settings);
     applyDashboardLayout();
   }
+
+  if (input.dataset.action === 'set-colour') {
+    const colors = getCustomColors();
+    colors[key] = input.value;
+    saveCustomColors(colors);
+    applyCustomColors();
+  }
 });
 
 /* ---------------- Transaction filters ---------------- */
@@ -769,5 +777,6 @@ if ('serviceWorker' in navigator) {
 
 renderNavBar();
 document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
+applyCustomColors();
 applyStaticTranslations();
 renderDashboard();

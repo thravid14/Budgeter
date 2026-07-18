@@ -411,6 +411,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .settings-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--gold); }
 .settings-move { display: flex; gap: 6px; }
 .settings-move .icon-btn:disabled { opacity: 0.3; cursor: default; }
+.settings-row input[type="color"] {
+  width: 44px; height: 32px; padding: 2px;
+  border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface); cursor: pointer;
+}
 
 /* ===== Toasts ===== */
 #toast-container {

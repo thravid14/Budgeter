@@ -75,6 +75,40 @@ function saveDashboardSettings(settings) {
 function resetLayoutSettings() {
   localStorage.removeItem('budgeter_nav_settings');
   localStorage.removeItem('budgeter_dashboard_settings');
+  localStorage.removeItem('budgeter_custom_colors');
+}
+
+// Theme colours: Accent/Income/Expense only (not Background) — a custom
+// background risks clashing with the fixed text colours from the
+// light/dark theme, which isn't worth the added complexity of an
+// auto-contrast system for a personal app. Applies on top of whichever
+// light/dark theme is active, the same for both (not a separate override
+// per mode) — simpler to reason about and enough for "make it feel mine".
+const THEME_COLOR_REGISTRY = [
+  { key: 'accent', cssVar: '--gold', labelKey: 'settings.colourAccent', fallback: '#C9A227' },
+  { key: 'income', cssVar: '--income', labelKey: 'settings.colourIncome', fallback: '#5FB88A' },
+  { key: 'expense', cssVar: '--expense', labelKey: 'settings.colourExpense', fallback: '#C1543C' }
+];
+
+function getCustomColors() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('budgeter_custom_colors'));
+    if (saved && typeof saved === 'object') return saved;
+  } catch (e) { /* fall through to defaults */ }
+  return {};
+}
+
+function saveCustomColors(colors) {
+  localStorage.setItem('budgeter_custom_colors', JSON.stringify(colors));
+}
+
+function applyCustomColors() {
+  const custom = getCustomColors();
+  const root = document.documentElement;
+  THEME_COLOR_REGISTRY.forEach(({ key, cssVar }) => {
+    if (custom[key]) root.style.setProperty(cssVar, custom[key]);
+    else root.style.removeProperty(cssVar);
+  });
 }
 
 // Builds the #nav button markup: Dashboard first, user-ordered/filtered
