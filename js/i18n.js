@@ -79,7 +79,7 @@ const translations = {
       title: 'Accounts', addAccount: '+ Add account',
       empty: 'No accounts yet. Add one (e.g. "Cash" or "Current account") to begin.',
       typeCurrent: 'Current account', typeSavings: 'Savings account',
-      typeCredit: 'Credit card', typeCash: 'Cash'
+      typeIsa: 'ISA', typeCredit: 'Credit card', typeCash: 'Cash'
     },
     sync: {
       title: 'Sync', sub: 'Keep your phone and desktop in step — encrypted so only you can read it.',
@@ -199,7 +199,7 @@ const translations = {
       title: 'Cuentas', addAccount: '+ Añadir cuenta',
       empty: 'Aún no hay cuentas. Añade una (p. ej. "Efectivo" o "Cuenta corriente") para empezar.',
       typeCurrent: 'Cuenta corriente', typeSavings: 'Cuenta de ahorros',
-      typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo'
+      typeIsa: 'ISA', typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo'
     },
     sync: {
       title: 'Sincronización', sub: 'Mantén tu móvil y tu ordenador sincronizados — cifrado para que solo tú puedas leerlo.',

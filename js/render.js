@@ -368,6 +368,7 @@ function accountTypeLabel(type) {
   const labels = {
     current: t('accounts.typeCurrent'),
     savings: t('accounts.typeSavings'),
+    isa: t('accounts.typeIsa'),
     credit: t('accounts.typeCredit'),
     cash: t('accounts.typeCash'),
     bank: t('accounts.typeCurrent'),
@@ -381,6 +382,7 @@ function accountTypeIcon(type) {
   const icons = {
     current: '<path d="M3 10l9-6 9 6"/><rect x="5" y="10" width="14" height="9" rx="1"/><line x1="5" y1="19" x2="19" y2="19"/>',
     savings: '<ellipse cx="12" cy="8" rx="7" ry="3"/><path d="M5 8v8c0 1.7 3.1 3 7 3s7-1.3 7-3V8"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
+    isa: '<path d="M12 3l7 3v6c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
     credit: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>',
     cash: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/>'
   };

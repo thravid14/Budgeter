@@ -451,6 +451,7 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
       <select id="acc-type">
         <option value="current">Current account</option>
         <option value="savings">Savings account</option>
+        <option value="isa">ISA</option>
         <option value="credit">Credit card</option>
         <option value="cash">Cash</option>
       </select>

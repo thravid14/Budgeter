@@ -312,7 +312,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   color: var(--text);
   padding: 8px 10px;
   border-radius: var(--radius);
-  font-size: 0.85rem;
+  font-size: 1rem;
 }
 
 /* ===== Grids for categories/accounts ===== */
@@ -348,7 +348,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   color: var(--text);
   padding: 9px 11px;
   border-radius: var(--radius);
-  font-size: 0.9rem;
+  font-size: 1rem;
   transition: border-color 0.15s var(--ease);
 }
 .form-field input:focus, .form-field select:focus { border-color: var(--gold); }
