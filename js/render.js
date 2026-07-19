@@ -227,6 +227,52 @@ function renderBillRows(bills, categories, withActions) {
   }).join('');
 }
 
+/* ---------------- Standing Orders page ---------------- */
+
+async function renderStandingOrders() {
+  const month = currentMonthStr();
+  const [standingOrders, accounts] = await Promise.all([getStandingOrdersWithStatus(month), getAccounts()]);
+  document.getElementById('standingorders-month-label').textContent = monthLabel(month);
+  document.getElementById('standingorder-list').innerHTML = renderStandingOrderRows(standingOrders, accounts, true);
+}
+
+// Reuses the bills.* status/action labels (Paid/Overdue/Due in.../Mark paid/
+// Undo) since the semantics are identical, just for a transfer instead of
+// a transaction — no need for a separate, duplicate set of i18n keys.
+function renderStandingOrderRows(standingOrders, accounts, withActions) {
+  if (standingOrders.length === 0) {
+    return `<p class="empty-note">${t('standingOrders.empty')}</p>`;
+  }
+  const month = currentMonthStr();
+  return standingOrders.map(so => {
+    const from = accounts.find(a => a.id === so.fromAccountId);
+    const to = accounts.find(a => a.id === so.toAccountId);
+    let statusLabel, statusClass;
+    if (so.status === 'paid') { statusLabel = t('bills.paid'); statusClass = 'paid'; }
+    else if (so.status === 'overdue') { statusLabel = t('bills.overdue', { n: Math.abs(so.daysUntilDue) }); statusClass = 'overdue'; }
+    else if (so.daysUntilDue === 0) { statusLabel = t('bills.dueToday'); statusClass = 'due-soon'; }
+    else { statusLabel = t('bills.dueIn', { n: so.daysUntilDue }); statusClass = so.daysUntilDue <= 3 ? 'due-soon' : 'upcoming'; }
+
+    return `
+      <div class="bill-row" data-id="${so.id}">
+        <div class="ledger-desc">
+          <span class="ledger-name">${escapeHtml(so.name)}</span>
+          <span class="ledger-meta">${from ? escapeHtml(from.name) : '—'} → ${to ? escapeHtml(to.name) : '—'} · ${t('bills.dueDayLabel', { n: so.dueDay })}</span>
+        </div>
+        <span class="ledger-leader"></span>
+        <span class="bill-status ${statusClass}">${statusLabel}</span>
+        <span class="ledger-amount transfer">${formatMoney(so.amount)}</span>
+        <div class="row-actions">
+          ${so.status === 'paid'
+            ? `<button class="btn-secondary btn-sm" data-action="unpay-standingorder" data-id="${so.id}" data-month="${month}">${t('bills.undo')}</button>`
+            : `<button class="btn-primary btn-sm" data-action="pay-standingorder" data-id="${so.id}">${t('bills.markPaid')}</button>`}
+          ${withActions ? `<button class="icon-btn danger" data-action="delete-standingorder" data-id="${so.id}" aria-label="Delete">✕</button>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 /* ---------------- Budgets page ---------------- */
 
 async function renderBudgets() {

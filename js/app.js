@@ -59,9 +59,17 @@ async function refreshCurrentView() {
     showToast(t('toast.billsAutoPaid', { count: justPaid.length, names: justPaid.map(b => b.name).join(', ') }));
   }
 
+  const justTransferred = await runAutoPayStandingOrders();
+  if (justTransferred.length === 1) {
+    showToast(t('toast.standingOrderAutoPaid', { name: justTransferred[0].name, amount: formatMoney(justTransferred[0].amount) }));
+  } else if (justTransferred.length > 1) {
+    showToast(t('toast.standingOrdersAutoPaid', { count: justTransferred.length, names: justTransferred.map(s => s.name).join(', ') }));
+  }
+
   if (currentView === 'dashboard') await renderDashboard();
   if (currentView === 'transactions') await renderTransactions();
   if (currentView === 'bills') await renderBills();
+  if (currentView === 'standingorders') await renderStandingOrders();
   if (currentView === 'budgets') await renderBudgets();
   if (currentView === 'trends') await renderTrends();
   if (currentView === 'networth') await renderNetWorth();
@@ -394,6 +402,71 @@ document.getElementById('csv-file-input').addEventListener('change', async (e) =
 
 const CATEGORY_COLORS = ['#C9A227', '#5FB88A', '#C1543C', '#7C93C9', '#B37FC4', '#D68C45'];
 
+// A sensible generic starter set, added on demand via "+ Add starter
+// categories" rather than seeded automatically — keeps the existing
+// "+ Add category" flow fully available for custom ones alongside these.
+const STARTER_CATEGORIES = {
+  en: [
+    { name: 'Salary/Wages', kind: 'income' },
+    { name: 'Interest', kind: 'income' },
+    { name: 'Refunds', kind: 'income' },
+    { name: 'Other income', kind: 'income' },
+    { name: 'Groceries', kind: 'expense' },
+    { name: 'Rent/Mortgage', kind: 'expense' },
+    { name: 'Utilities', kind: 'expense' },
+    { name: 'Council Tax', kind: 'expense' },
+    { name: 'Transport', kind: 'expense' },
+    { name: 'Insurance', kind: 'expense' },
+    { name: 'Subscriptions', kind: 'expense' },
+    { name: 'Phone/Internet', kind: 'expense' },
+    { name: 'Eating out', kind: 'expense' },
+    { name: 'Shopping', kind: 'expense' },
+    { name: 'Health/Personal care', kind: 'expense' },
+    { name: 'Debt repayment', kind: 'expense' },
+    { name: 'Gifts/Charity', kind: 'expense' },
+    { name: 'Miscellaneous', kind: 'expense' }
+  ],
+  es: [
+    { name: 'Salario/Sueldo', kind: 'income' },
+    { name: 'Intereses', kind: 'income' },
+    { name: 'Reembolsos', kind: 'income' },
+    { name: 'Otros ingresos', kind: 'income' },
+    { name: 'Alimentación', kind: 'expense' },
+    { name: 'Alquiler/Hipoteca', kind: 'expense' },
+    { name: 'Servicios', kind: 'expense' },
+    { name: 'Impuesto municipal', kind: 'expense' },
+    { name: 'Transporte', kind: 'expense' },
+    { name: 'Seguros', kind: 'expense' },
+    { name: 'Suscripciones', kind: 'expense' },
+    { name: 'Teléfono/Internet', kind: 'expense' },
+    { name: 'Comer fuera', kind: 'expense' },
+    { name: 'Compras', kind: 'expense' },
+    { name: 'Salud/Cuidado personal', kind: 'expense' },
+    { name: 'Pago de deudas', kind: 'expense' },
+    { name: 'Regalos/Caridad', kind: 'expense' },
+    { name: 'Varios', kind: 'expense' }
+  ]
+};
+
+document.getElementById('btn-add-starter-categories').addEventListener('click', async () => {
+  const existing = await getCategories();
+  const existingNames = new Set(existing.map(c => c.name.trim().toLowerCase()));
+  const list = STARTER_CATEGORIES[currentLang] || STARTER_CATEGORIES.en;
+
+  let addedCount = 0;
+  for (let i = 0; i < list.length; i++) {
+    const cat = list[i];
+    if (existingNames.has(cat.name.toLowerCase())) continue;
+    await addCategory({ name: cat.name, kind: cat.kind, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] });
+    addedCount++;
+  }
+
+  refreshCurrentView();
+  showToast(addedCount > 0
+    ? t('toast.starterCategoriesAdded', { count: addedCount })
+    : t('toast.starterCategoriesNoneAdded'));
+});
+
 document.getElementById('btn-add-category').addEventListener('click', () => {
   openModal(t('modalTitle.addCategory'), `
     <div class="form-field">
@@ -552,6 +625,72 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
   });
 });
 
+/* ---------------- Add Standing Order ---------------- */
+
+document.getElementById('btn-add-standingorder').addEventListener('click', async () => {
+  const accounts = await getAccounts();
+
+  if (accounts.length < 2) {
+    openModal('Add another account first', `<p class="empty-note">You need at least two accounts to set up a standing order between them.</p>
+      <div class="form-actions"><button class="btn-primary" id="go-add-account-3">Add account</button></div>`);
+    document.getElementById('go-add-account-3').addEventListener('click', () => {
+      closeModal();
+      switchView('accounts');
+      document.getElementById('btn-add-account').click();
+    });
+    return;
+  }
+
+  openModal(t('modalTitle.addStandingOrder'), `
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="so-name" placeholder="e.g. Savings transfer" />
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Amount</label>
+        <input type="number" step="0.01" min="0" id="so-amount" placeholder="0.00" />
+      </div>
+      <div class="form-field">
+        <label>Due day of month</label>
+        <input type="number" min="1" max="31" id="so-due-day" placeholder="e.g. 1" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>From</label>
+        <select id="so-from">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+      <div class="form-field">
+        <label>To</label>
+        <select id="so-to">${accounts.map((a, i) => `<option value="${a.id}" ${i === 1 ? 'selected' : ''}>${escapeHtml(a.name)}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="so-cancel">Cancel</button>
+      <button class="btn-primary" id="so-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('so-cancel').addEventListener('click', closeModal);
+  document.getElementById('so-save').addEventListener('click', async () => {
+    const name = document.getElementById('so-name').value.trim();
+    const amount = document.getElementById('so-amount').value;
+    const dueDay = document.getElementById('so-due-day').value;
+    const fromAccountId = document.getElementById('so-from').value;
+    const toAccountId = document.getElementById('so-to').value;
+    if (!name) { alert('Enter a name.'); return; }
+    if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
+    if (!dueDay || dueDay < 1 || dueDay > 31) { alert('Enter a due day between 1 and 31.'); return; }
+    if (fromAccountId === toAccountId) { alert('Choose two different accounts.'); return; }
+
+    await addStandingOrder({ name, amount, dueDay, fromAccountId, toAccountId });
+    closeModal();
+    refreshCurrentView();
+    showToast(t('toast.standingOrderAdded'));
+  });
+});
+
 /* ---------------- Add Budget ---------------- */
 
 document.getElementById('btn-add-budget').addEventListener('click', async () => {
@@ -633,6 +772,21 @@ document.addEventListener('click', async (e) => {
     await markBillUnpaid(id, month);
     refreshCurrentView();
     showToast(t('toast.billUnpaid'));
+  }
+  if (btn.dataset.action === 'delete-standingorder') {
+    if (confirm('Delete this standing order? Past transfers from it are kept.')) { await deleteStandingOrder(id); refreshCurrentView(); showToast(t('toast.standingOrderDeleted')); }
+  }
+  if (btn.dataset.action === 'pay-standingorder') {
+    const today = new Date().toISOString().slice(0, 10);
+    await markStandingOrderDone(id, today);
+    refreshCurrentView();
+    showToast(t('toast.standingOrderPaid'));
+  }
+  if (btn.dataset.action === 'unpay-standingorder') {
+    const month = btn.dataset.month;
+    await markStandingOrderUndone(id, month);
+    refreshCurrentView();
+    showToast(t('toast.standingOrderUnpaid'));
   }
 
   if (btn.dataset.action === 'setup-sync') {

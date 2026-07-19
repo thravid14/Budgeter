@@ -40,6 +40,22 @@ db.version(3).stores({
   budgets: '++id, categoryId'
 });
 
+// v4: adds Standing Orders — a recurring TRANSFER between your own accounts
+// (e.g. £200 to Savings on the 1st), the UK banking term for exactly this,
+// as distinct from a Bill (a recurring payment to someone else). Same
+// "no stored paid flag" pattern as Bills, just for transfers instead of
+// transactions — transfers.standingOrderId links a transfer back to the
+// standing order that generated it.
+db.version(4).stores({
+  accounts: '++id, name',
+  categories: '++id, name, kind',
+  transactions: '++id, date, kind, accountId, categoryId, billId',
+  bills: '++id, name, categoryId, accountId',
+  transfers: '++id, date, fromAccountId, toAccountId, standingOrderId',
+  budgets: '++id, categoryId',
+  standingOrders: '++id, name, fromAccountId, toAccountId'
+});
+
 /* ---------------- Accounts ---------------- */
 
 async function addAccount({ name, type, startingBalance }) {
@@ -101,13 +117,14 @@ async function deleteTransaction(id) {
    not one.
 */
 
-async function addTransfer({ date, amount, fromAccountId, toAccountId, note }) {
+async function addTransfer({ date, amount, fromAccountId, toAccountId, note, standingOrderId }) {
   return db.transfers.add({
     date,
     amount: Number(amount) || 0,
     fromAccountId: Number(fromAccountId),
     toAccountId: Number(toAccountId),
-    note: note || ''
+    note: note || '',
+    standingOrderId: standingOrderId ? Number(standingOrderId) : null
   });
 }
 
@@ -117,6 +134,105 @@ async function getTransfers() {
 
 async function deleteTransfer(id) {
   return db.transfers.delete(id);
+}
+
+/* ---------------- Standing Orders (recurring transfers) ----------------
+   A "standing order" is a template for moving money between two of your
+   own accounts on a repeating schedule (e.g. £200 to Savings on the 1st).
+   Exactly the Bills pattern, but for Transfers instead of Transactions —
+   "done" isn't a stored flag, we check whether a transfer with this
+   standingOrderId exists in the given month.
+*/
+
+async function addStandingOrder({ name, amount, fromAccountId, toAccountId, dueDay }) {
+  return db.standingOrders.add({
+    name,
+    amount: Number(amount) || 0,
+    fromAccountId: Number(fromAccountId),
+    toAccountId: Number(toAccountId),
+    dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1))
+  });
+}
+
+async function getStandingOrders() {
+  return db.standingOrders.toArray();
+}
+
+async function deleteStandingOrder(id) {
+  return db.standingOrders.delete(id);
+}
+
+// Marks a standing order as done for the given month by creating a real transfer linked to it.
+async function markStandingOrderDone(standingOrderId, dateStr) {
+  const so = await db.standingOrders.get(standingOrderId);
+  if (!so) return;
+  return addTransfer({
+    date: dateStr,
+    amount: so.amount,
+    fromAccountId: so.fromAccountId,
+    toAccountId: so.toAccountId,
+    note: so.name,
+    standingOrderId: so.id
+  });
+}
+
+// Un-marks a standing order as done for a given month by deleting the transfer(s) it created.
+async function markStandingOrderUndone(standingOrderId, monthStr) {
+  const transfers = await db.transfers.where('standingOrderId').equals(standingOrderId).toArray();
+  const inMonth = transfers.filter(tr => tr.date.startsWith(monthStr));
+  for (const tr of inMonth) {
+    await db.transfers.delete(tr.id);
+  }
+}
+
+// Returns standing orders with computed status for a given month: done/due/overdue, due date, days until due.
+async function getStandingOrdersWithStatus(monthStr) {
+  const [standingOrders, transfers] = await Promise.all([getStandingOrders(), db.transfers.toArray()]);
+  const [year, month] = monthStr.split('-').map(Number);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  return standingOrders.map(so => {
+    const day = Math.min(so.dueDay, daysInMonth);
+    const dueDate = new Date(year, month - 1, day);
+    const doneTx = transfers.find(tr => tr.standingOrderId === so.id && tr.date.startsWith(monthStr));
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysUntilDue = Math.round((dueDate - today) / msPerDay);
+
+    let status;
+    if (doneTx) status = 'paid';
+    else if (daysUntilDue < 0) status = 'overdue';
+    else status = 'unpaid';
+
+    return { ...so, dueDate, daysUntilDue, status, paidTx: doneTx };
+  }).sort((a, b) => a.dueDate - b.dueDate);
+}
+
+// Auto-executes any standing order whose due date (this month) has arrived
+// and hasn't already run — same reasoning as runAutoPayBills(): only looks
+// at the current month, dates the transfer on the actual due date, and only
+// runs while the app is actually open. Idempotent — safe to call repeatedly.
+async function runAutoPayStandingOrders() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const [standingOrders, transfers] = await Promise.all([getStandingOrders(), db.transfers.toArray()]);
+  const justPaid = [];
+
+  for (const so of standingOrders) {
+    const day = Math.min(so.dueDay, daysInMonth);
+    const dueDate = new Date(year, month - 1, day);
+    const alreadyDone = transfers.some(tr => tr.standingOrderId === so.id && tr.date.startsWith(monthStr));
+    if (alreadyDone || dueDate > today) continue;
+
+    const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    await markStandingOrderDone(so.id, dueDateStr);
+    justPaid.push(so);
+  }
+  return justPaid;
 }
 
 /* ---------------- Bills (recurring expenses) ----------------
@@ -272,19 +388,20 @@ async function getBudgetsWithProgress(monthStr) {
 */
 
 async function exportAllData() {
-  const [accounts, categories, transactions, bills, transfers, budgets] = await Promise.all([
+  const [accounts, categories, transactions, bills, transfers, budgets, standingOrders] = await Promise.all([
     db.accounts.toArray(),
     db.categories.toArray(),
     db.transactions.toArray(),
     db.bills.toArray(),
     db.transfers.toArray(),
-    db.budgets.toArray()
+    db.budgets.toArray(),
+    db.standingOrders.toArray()
   ]);
-  return { accounts, categories, transactions, bills, transfers, budgets };
+  return { accounts, categories, transactions, bills, transfers, budgets, standingOrders };
 }
 
 async function importAllData(data) {
-  const tables = [db.accounts, db.categories, db.transactions, db.bills, db.transfers, db.budgets];
+  const tables = [db.accounts, db.categories, db.transactions, db.bills, db.transfers, db.budgets, db.standingOrders];
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map(t => t.clear()));
     await Promise.all([
@@ -293,7 +410,8 @@ async function importAllData(data) {
       data.transactions && data.transactions.length ? db.transactions.bulkAdd(data.transactions) : null,
       data.bills && data.bills.length ? db.bills.bulkAdd(data.bills) : null,
       data.transfers && data.transfers.length ? db.transfers.bulkAdd(data.transfers) : null,
-      data.budgets && data.budgets.length ? db.budgets.bulkAdd(data.budgets) : null
+      data.budgets && data.budgets.length ? db.budgets.bulkAdd(data.budgets) : null,
+      data.standingOrders && data.standingOrders.length ? db.standingOrders.bulkAdd(data.standingOrders) : null
     ]);
   });
 }

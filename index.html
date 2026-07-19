@@ -122,6 +122,15 @@
       <div id="bill-list" class="ledger-list full"></div>
     </section>
 
+    <section id="view-standingorders" class="view">
+      <header class="view-header">
+        <h1 data-i18n="standingOrders.title">Standing Orders</h1>
+        <p class="sub" id="standingorders-month-label"></p>
+        <button class="btn-primary" id="btn-add-standingorder" data-i18n="standingOrders.addStandingOrder">+ Add standing order</button>
+      </header>
+      <div id="standingorder-list" class="ledger-list full"></div>
+    </section>
+
     <section id="view-budgets" class="view">
       <header class="view-header">
         <h1 data-i18n="budgets.title">Budgets</h1>
@@ -207,7 +216,10 @@
     <section id="view-categories" class="view">
       <header class="view-header">
         <h1 data-i18n="categories.title">Categories</h1>
-        <button class="btn-primary" id="btn-add-category" data-i18n="categories.addCategory">+ Add category</button>
+        <div class="header-actions">
+          <button class="btn-secondary" id="btn-add-starter-categories" data-i18n="categories.addStarter">+ Add starter categories</button>
+          <button class="btn-primary" id="btn-add-category" data-i18n="categories.addCategory">+ Add category</button>
+        </div>
       </header>
       <div id="category-list" class="tag-grid"></div>
     </section>
@@ -259,6 +271,17 @@
           to happen while the app is fully closed). "Undo" removes it if
           something looks wrong; you can still mark a bill paid early
           yourself if you've already paid it before the due date.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.standingOrdersHeading">Standing Orders</h2>
+        <p data-i18n="help.standingOrdersBody">The UK banking term for a recurring transfer between
+          two of your own accounts — for example, moving £200 into savings
+          on the 1st of every month. Works exactly like Bills, but moves
+          money between your own accounts instead of paying an expense, so
+          it never counts as income or spending and correctly updates both
+          accounts' balances. Use this (not a Bill, and not a category)
+          for anything that's really just you moving your own money
+          around.</p>
       </div>
       <div class="panel">
         <h2 data-i18n="help.budgetsHeading">Budgets</h2>

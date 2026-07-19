@@ -1,6 +1,6 @@
 # Budgeter — What's Built (plain-language log)
 
-*Last updated: 19 July 2026 — fixing real-world usage reports as they come in.*
+*Last updated: 20 July 2026 — fixing real-world usage reports as they come in.*
 
 ## Post-launch fixes (found during real usage)
 
@@ -11,6 +11,9 @@
 - **Numbers now use thousands separators** (£12,345.67 instead of £12345.67) everywhere in the app, for readability.
 - **Net Worth chart heading was cramped** ("Net worth over time last 6 months" squashed onto one line) — split into a proper two-line heading matching the rest of the app.
 - **Net Worth showing the identical figure for every month** — this wasn't random; it's because the calculation doesn't yet know when each account was actually opened, so it currently projects today's balance backward across months that don't have their own transaction history. Rather than hide this, Budgeter now shows a plain-language note explaining why when it happens — it naturally goes away and shows real month-to-month change as more dated transactions build up.
+- **New "+ Add starter categories" button** on the Categories page — adds a ready-made set of 18 common income/expense categories (Salary, Groceries, Rent/Mortgage, Utilities, Council Tax, Transport, and more — see the button for the full list) each with their own colour, in one click. Safe to click more than once — it skips anything you've already got, so it won't create duplicates. The original "+ Add category" button is untouched, for anything custom you still want to add yourself.
+- **Clarified how Transfers work vs Categories** — a "Transfer to Revolut" entry had been set up as a recurring *Bill*, which isn't right: Bills always create an expense from one account and never credit the destination, so it was quietly understating that account's balance and overstating monthly spending — and would now have kept doing that automatically every month once bill auto-pay landed. The fix is to use the dedicated **"+ Transfer"** button for *any* movement between your own accounts (including into savings/ISA) instead — it correctly moves money between both accounts without touching income/expense totals. (The "Transfer to Revolut" bill entries themselves need deleting manually from your device — Budgeter can't reach your live data from here — see the Bills page, delete any entry with that name, then re-create it as a Standing Order below instead.)
+- **New "Standing Orders" page** — the proper fix for the Revolut situation above. This is a recurring *transfer* between two of your own accounts (the UK banking term for it), e.g. moving £200 into savings on the 1st of every month. It works exactly like Bills — set it up once, it pays itself automatically from then on, shows Due/Overdue/Paid status, and Undo is there if something looks wrong — but instead of creating an expense, it moves money between both accounts correctly, so it never distorts your income/expense totals. Same open-app limitation as Bills: it catches up next time you open Budgeter on or after the due date, not necessarily the exact moment.
 
 *Update needs pushing to GitHub Desktop for these to reach your phone/desktop installs.*
 
@@ -31,7 +34,11 @@ Budgeter is a personal money-tracking app, built just for you. It works offline,
 ### Bills
 - Set up a recurring bill once (rent, subscriptions, utilities) with an amount and due date.
 - Each month it automatically shows as due, overdue, or paid — no need to re-enter it.
-- One tap marks it paid (creates a real transaction); tapped by mistake? Hit Undo.
+- Pays itself automatically once the due date arrives; tapped/paid by mistake? Hit Undo.
+
+### Standing Orders
+- Same idea as Bills, but for recurring transfers between two of your own accounts (e.g. £200 into savings on the 1st of every month) instead of an expense.
+- Pays itself automatically, shows due/overdue/paid status, Undo included — never counted as income or spending.
 
 ### Budgets
 - Set a monthly spending limit for any category (e.g. £200 for Groceries).

@@ -20,6 +20,8 @@ const NAV_REGISTRY = [
     icon: '<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/>' },
   { id: 'bills', labelKey: 'nav.bills',
     icon: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>' },
+  { id: 'standingorders', labelKey: 'nav.standingOrders',
+    icon: '<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 16v-4h4"/>' },
   { id: 'budgets', labelKey: 'nav.budgets',
     icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>' },
   { id: 'trends', labelKey: 'nav.trends',

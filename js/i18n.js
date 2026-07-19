@@ -21,6 +21,7 @@ const translations = {
   en: {
     nav: {
       dashboard: 'Dashboard', transactions: 'Transactions', bills: 'Bills',
+      standingOrders: 'Standing Orders',
       budgets: 'Budgets', trends: 'Trends', networth: 'Net worth',
       categories: 'Categories', accounts: 'Accounts', sync: 'Sync', help: 'Help', settings: 'Settings'
     },
@@ -55,6 +56,10 @@ const translations = {
       paid: 'Paid', overdue: 'Overdue {n}d', dueToday: 'Due today', dueIn: 'Due in {n}d',
       markPaid: 'Mark paid', undo: 'Undo', dueDayLabel: 'due day {n}'
     },
+    standingOrders: {
+      title: 'Standing Orders', addStandingOrder: '+ Add standing order',
+      empty: "No standing orders yet. Add one for a regular transfer between your own accounts, like a monthly move into savings."
+    },
     budgets: {
       title: 'Budgets', addBudget: '+ Add budget',
       empty: 'No budgets yet. Set a monthly limit for a category to track progress.',
@@ -73,7 +78,7 @@ const translations = {
       flatDataNote: "Showing the same figure across every month usually just means there isn't much dated transaction history yet — this fills in and starts showing real month-to-month change as you keep using Budgeter."
     },
     categories: {
-      title: 'Categories', addCategory: '+ Add category',
+      title: 'Categories', addCategory: '+ Add category', addStarter: '+ Add starter categories',
       empty: 'No categories yet. Add one to start tagging transactions.'
     },
     accounts: {
@@ -99,6 +104,8 @@ const translations = {
       transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, filter by account, category, or month, and export or import your transaction history as a CSV file.',
       billsHeading: 'Bills',
       billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date.',
+      standingOrdersHeading: 'Standing Orders',
+      standingOrdersBody: "The UK banking term for a recurring transfer between two of your own accounts — for example, moving £200 into savings on the 1st of every month. Works exactly like Bills, but moves money between your own accounts instead of paying an expense, so it never counts as income or spending and correctly updates both accounts' balances. Use this (not a Bill, and not a category) for anything that's really just you moving your own money around.",
       budgetsHeading: 'Budgets',
       budgetsBody: 'Set a monthly £ limit for a spending category (e.g. £200 for Groceries). The progress bar fills up as you spend during the month and turns red if you go over — one budget per category.',
       trendsHeading: 'Trends',
@@ -133,17 +140,24 @@ const translations = {
       billPaid: 'Bill marked as paid.', billUnpaid: 'Bill marked as unpaid.',
       billAutoPaid: '{name} ({amount}) paid automatically.',
       billsAutoPaid: '{count} bills paid automatically: {names}.',
-      csvExported: 'Transactions exported.', summaryCopied: 'Summary copied to clipboard.'
+      csvExported: 'Transactions exported.', summaryCopied: 'Summary copied to clipboard.',
+      starterCategoriesAdded: '{count} starter categories added.',
+      starterCategoriesNoneAdded: "All starter categories already exist — nothing new to add.",
+      standingOrderAdded: 'Standing order added.', standingOrderDeleted: 'Standing order deleted.',
+      standingOrderPaid: 'Standing order marked as done.', standingOrderUnpaid: 'Standing order marked as not done.',
+      standingOrderAutoPaid: '{name} ({amount}) transferred automatically.',
+      standingOrdersAutoPaid: '{count} standing orders transferred automatically: {names}.'
     },
     modalTitle: {
       addTransaction: 'Add transaction', addTransfer: 'Transfer between accounts',
       addCategory: 'Add category', addAccount: 'Add account', addBill: 'Add bill',
-      addBudget: 'Add budget'
+      addBudget: 'Add budget', addStandingOrder: 'Add standing order'
     }
   },
   es: {
     nav: {
       dashboard: 'Panel', transactions: 'Transacciones', bills: 'Facturas',
+      standingOrders: 'Órdenes permanentes',
       budgets: 'Presupuestos', trends: 'Tendencias', networth: 'Patrimonio neto',
       categories: 'Categorías', accounts: 'Cuentas', sync: 'Sincronización', help: 'Ayuda', settings: 'Ajustes'
     },
@@ -178,6 +192,10 @@ const translations = {
       paid: 'Pagada', overdue: 'Vencida hace {n}d', dueToday: 'Vence hoy', dueIn: 'Vence en {n}d',
       markPaid: 'Marcar como pagada', undo: 'Deshacer', dueDayLabel: 'día de vencimiento {n}'
     },
+    standingOrders: {
+      title: 'Órdenes permanentes', addStandingOrder: '+ Añadir orden permanente',
+      empty: 'Aún no hay órdenes permanentes. Añade una para una transferencia regular entre tus propias cuentas, como un traspaso mensual a ahorros.'
+    },
     budgets: {
       title: 'Presupuestos', addBudget: '+ Añadir presupuesto',
       empty: 'Aún no hay presupuestos. Establece un límite mensual para una categoría.',
@@ -196,7 +214,7 @@ const translations = {
       flatDataNote: 'Mostrar la misma cifra en todos los meses normalmente solo significa que aún no hay mucho historial de transacciones con fecha — esto se irá completando y mostrará cambios reales mes a mes a medida que sigas usando Budgeter.'
     },
     categories: {
-      title: 'Categorías', addCategory: '+ Añadir categoría',
+      title: 'Categorías', addCategory: '+ Añadir categoría', addStarter: '+ Añadir categorías iniciales',
       empty: 'Aún no hay categorías. Añade una para empezar a etiquetar transacciones.'
     },
     accounts: {
@@ -222,6 +240,8 @@ const translations = {
       transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, filtra por cuenta, categoría o mes, y exporta o importa tu historial de transacciones como archivo CSV.',
       billsHeading: 'Facturas',
       billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento.',
+      standingOrdersHeading: 'Órdenes permanentes',
+      standingOrdersBody: 'El término bancario del Reino Unido para una transferencia recurrente entre dos de tus propias cuentas — por ejemplo, mover 200 £ a ahorros el día 1 de cada mes. Funciona igual que las Facturas, pero mueve dinero entre tus propias cuentas en lugar de pagar un gasto, por lo que nunca cuenta como ingreso o gasto y actualiza correctamente el saldo de ambas cuentas. Usa esto (no una Factura, ni una categoría) para cualquier cosa que en realidad sea simplemente mover tu propio dinero.',
       budgetsHeading: 'Presupuestos',
       budgetsBody: 'Establece un límite mensual en £ para una categoría de gasto (p. ej. £200 para Compras). La barra de progreso se llena a medida que gastas durante el mes y se pone roja si te pasas — un presupuesto por categoría.',
       trendsHeading: 'Tendencias',
@@ -256,12 +276,18 @@ const translations = {
       billPaid: 'Factura marcada como pagada.', billUnpaid: 'Factura marcada como pendiente.',
       billAutoPaid: '{name} ({amount}) pagada automáticamente.',
       billsAutoPaid: '{count} facturas pagadas automáticamente: {names}.',
-      csvExported: 'Transacciones exportadas.', summaryCopied: 'Resumen copiado al portapapeles.'
+      csvExported: 'Transacciones exportadas.', summaryCopied: 'Resumen copiado al portapapeles.',
+      starterCategoriesAdded: '{count} categorías iniciales añadidas.',
+      starterCategoriesNoneAdded: 'Todas las categorías iniciales ya existen — nada nuevo que añadir.',
+      standingOrderAdded: 'Orden permanente añadida.', standingOrderDeleted: 'Orden permanente eliminada.',
+      standingOrderPaid: 'Orden permanente marcada como realizada.', standingOrderUnpaid: 'Orden permanente marcada como no realizada.',
+      standingOrderAutoPaid: '{name} ({amount}) transferida automáticamente.',
+      standingOrdersAutoPaid: '{count} órdenes permanentes transferidas automáticamente: {names}.'
     },
     modalTitle: {
       addTransaction: 'Añadir transacción', addTransfer: 'Transferir entre cuentas',
       addCategory: 'Añadir categoría', addAccount: 'Añadir cuenta', addBill: 'Añadir factura',
-      addBudget: 'Añadir presupuesto'
+      addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente'
     }
   }
 };
