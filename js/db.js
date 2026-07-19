@@ -169,6 +169,40 @@ async function markBillUnpaid(billId, monthStr) {
   }
 }
 
+// Auto-pays any bill whose due date (this month) has arrived and hasn't
+// already been paid — creates the same transaction markBillPaid() would,
+// dated on the actual due date (not today), so records stay accurate even
+// if the app wasn't opened until a few days after the bill was due.
+// Idempotent: safe to call on every page load, since it only acts on bills
+// that are still unpaid. Only looks at the CURRENT month — it doesn't
+// retroactively pay bills from months the app was never opened.
+// Note: this can only run while the app is actually open (there's no
+// background process in a browser app), so "automatic" means "the next
+// time you open the app on or after the due date", not literally at
+// midnight on the due day.
+async function runAutoPayBills() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+  const daysInMonth = new Date(year, month, 0).getDate();
+
+  const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);
+  const justPaid = [];
+
+  for (const bill of bills) {
+    const day = Math.min(bill.dueDay, daysInMonth);
+    const dueDate = new Date(year, month - 1, day);
+    const alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
+    if (alreadyPaid || dueDate > today) continue;
+
+    const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    await markBillPaid(bill.id, dueDateStr);
+    justPaid.push(bill);
+  }
+  return justPaid;
+}
+
 // Returns bills with computed status for a given month: paid/unpaid, due date, days until due.
 async function getBillsWithStatus(monthStr) {
   const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);

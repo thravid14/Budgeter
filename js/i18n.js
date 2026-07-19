@@ -97,7 +97,7 @@ const translations = {
       transactionsHeading: 'Transactions',
       transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, filter by account, category, or month, and export or import your transaction history as a CSV file.',
       billsHeading: 'Bills',
-      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from — each month it shows as due, overdue, or paid. "Mark paid" creates a real transaction; "Undo" removes it if you tapped by mistake.',
+      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date.',
       budgetsHeading: 'Budgets',
       budgetsBody: 'Set a monthly £ limit for a spending category (e.g. £200 for Groceries). The progress bar fills up as you spend during the month and turns red if you go over — one budget per category.',
       trendsHeading: 'Trends',
@@ -130,6 +130,8 @@ const translations = {
       accountDeleted: 'Account deleted.', billDeleted: 'Bill deleted.',
       transferDeleted: 'Transfer deleted.', budgetDeleted: 'Budget deleted.',
       billPaid: 'Bill marked as paid.', billUnpaid: 'Bill marked as unpaid.',
+      billAutoPaid: '{name} ({amount}) paid automatically.',
+      billsAutoPaid: '{count} bills paid automatically: {names}.',
       csvExported: 'Transactions exported.', summaryCopied: 'Summary copied to clipboard.'
     },
     modalTitle: {
@@ -217,7 +219,7 @@ const translations = {
       transactionsHeading: 'Transacciones',
       transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, filtra por cuenta, categoría o mes, y exporta o importa tu historial de transacciones como archivo CSV.',
       billsHeading: 'Facturas',
-      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene — cada mes aparecerá como pendiente, vencida o pagada. "Marcar como pagada" crea una transacción real; "Deshacer" la elimina si la marcaste por error.',
+      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento.',
       budgetsHeading: 'Presupuestos',
       budgetsBody: 'Establece un límite mensual en £ para una categoría de gasto (p. ej. £200 para Compras). La barra de progreso se llena a medida que gastas durante el mes y se pone roja si te pasas — un presupuesto por categoría.',
       trendsHeading: 'Tendencias',
@@ -250,6 +252,8 @@ const translations = {
       accountDeleted: 'Cuenta eliminada.', billDeleted: 'Factura eliminada.',
       transferDeleted: 'Transferencia eliminada.', budgetDeleted: 'Presupuesto eliminado.',
       billPaid: 'Factura marcada como pagada.', billUnpaid: 'Factura marcada como pendiente.',
+      billAutoPaid: '{name} ({amount}) pagada automáticamente.',
+      billsAutoPaid: '{count} facturas pagadas automáticamente: {names}.',
       csvExported: 'Transacciones exportadas.', summaryCopied: 'Resumen copiado al portapapeles.'
     },
     modalTitle: {

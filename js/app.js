@@ -52,6 +52,13 @@ function switchView(view) {
 }
 
 async function refreshCurrentView() {
+  const justPaid = await runAutoPayBills();
+  if (justPaid.length === 1) {
+    showToast(t('toast.billAutoPaid', { name: justPaid[0].name, amount: formatMoney(justPaid[0].amount) }));
+  } else if (justPaid.length > 1) {
+    showToast(t('toast.billsAutoPaid', { count: justPaid.length, names: justPaid.map(b => b.name).join(', ') }));
+  }
+
   if (currentView === 'dashboard') await renderDashboard();
   if (currentView === 'transactions') await renderTransactions();
   if (currentView === 'bills') await renderBills();
@@ -780,4 +787,4 @@ renderNavBar();
 document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
 applyCustomColors();
 applyStaticTranslations();
-renderDashboard();
+refreshCurrentView();
