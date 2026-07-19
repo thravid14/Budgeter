@@ -150,6 +150,14 @@
       </div>
       <div class="panel">
         <h2 data-i18n="trends.byMonth">By month</h2>
+        <div class="trend-table-head">
+          <span></span>
+          <span class="trend-figures">
+            <span class="trend-col-label" data-i18n="trends.income">Income</span>
+            <span class="trend-col-label" data-i18n="trends.expenses">Expenses</span>
+            <span class="trend-col-label" data-i18n="trends.net">Net</span>
+          </span>
+        </div>
         <div id="trend-list" class="ledger-list"></div>
       </div>
     </section>
@@ -177,11 +185,21 @@
         </div>
       </div>
       <div class="panel">
-        <h2><span data-i18n="networth.overTime">Net worth over time</span> <span class="sub" data-i18n="networth.last6Months">last 6 months</span></h2>
+        <h2 data-i18n="networth.overTime">Net worth over time</h2>
+        <p class="sub" data-i18n="networth.last6Months">last 6 months</p>
         <div id="networth-chart" class="trend-chart"></div>
+        <p class="empty-note" id="networth-flat-note" style="display:none;margin-top:14px"></p>
       </div>
       <div class="panel">
         <h2 data-i18n="networth.byMonth">By month</h2>
+        <div class="trend-table-head">
+          <span></span>
+          <span class="trend-figures">
+            <span class="trend-col-label" data-i18n="networth.assets">Assets</span>
+            <span class="trend-col-label" data-i18n="networth.liabilities">Liabilities</span>
+            <span class="trend-col-label" data-i18n="networth.netWorth">Net worth</span>
+          </span>
+        </div>
         <div id="networth-list" class="ledger-list"></div>
       </div>
     </section>

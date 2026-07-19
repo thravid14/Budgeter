@@ -259,6 +259,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .trend-row .trend-figures { display: flex; gap: 16px; }
 .trend-row .trend-figures .ledger-amount { min-width: 70px; text-align: right; }
 
+.trend-table-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 0 6px 8px; }
+.trend-table-head .trend-figures { display: flex; gap: 16px; }
+.trend-col-label {
+  min-width: 70px; text-align: right;
+  font-size: 0.7rem; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.03em;
+}
+
 /* ===== Budgets ===== */
 .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .budget-card { margin-bottom: 0; }

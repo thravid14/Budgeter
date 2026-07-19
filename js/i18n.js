@@ -62,14 +62,15 @@ const translations = {
     },
     trends: {
       title: 'Trends', sub: 'Income vs expenses, last 6 months',
-      income: 'Income', expenses: 'Expenses', byMonth: 'By month',
+      income: 'Income', expenses: 'Expenses', net: 'Net', byMonth: 'By month',
       empty: 'No transactions yet in this period.'
     },
     networth: {
       title: 'Net worth', sub: 'What you own minus what you owe',
       assets: 'Assets', liabilities: 'Liabilities', netWorth: 'Net worth',
       overTime: 'Net worth over time', last6Months: 'last 6 months', byMonth: 'By month',
-      empty: 'Add an account to start tracking net worth.'
+      empty: 'Add an account to start tracking net worth.',
+      flatDataNote: "Showing the same figure across every month usually just means there isn't much dated transaction history yet — this fills in and starts showing real month-to-month change as you keep using Budgeter."
     },
     categories: {
       title: 'Categories', addCategory: '+ Add category',
@@ -184,14 +185,15 @@ const translations = {
     },
     trends: {
       title: 'Tendencias', sub: 'Ingresos frente a gastos, últimos 6 meses',
-      income: 'Ingresos', expenses: 'Gastos', byMonth: 'Por mes',
+      income: 'Ingresos', expenses: 'Gastos', net: 'Neto', byMonth: 'Por mes',
       empty: 'Aún no hay transacciones en este período.'
     },
     networth: {
       title: 'Patrimonio neto', sub: 'Lo que tienes menos lo que debes',
       assets: 'Activos', liabilities: 'Pasivos', netWorth: 'Patrimonio neto',
       overTime: 'Patrimonio neto en el tiempo', last6Months: 'últimos 6 meses', byMonth: 'Por mes',
-      empty: 'Añade una cuenta para empezar a seguir tu patrimonio neto.'
+      empty: 'Añade una cuenta para empezar a seguir tu patrimonio neto.',
+      flatDataNote: 'Mostrar la misma cifra en todos los meses normalmente solo significa que aún no hay mucho historial de transacciones con fecha — esto se irá completando y mostrará cambios reales mes a mes a medida que sigas usando Budgeter.'
     },
     categories: {
       title: 'Categorías', addCategory: '+ Añadir categoría',

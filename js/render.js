@@ -7,7 +7,7 @@
 
 function formatMoney(n) {
   const sign = n < 0 ? '-' : '';
-  return `${sign}£${Math.abs(n).toFixed(2)}`;
+  return `${sign}£${Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Formats a 'YYYY-MM-DD' string as UK-style DD/MM/YY, e.g. "17/07/26".
@@ -313,8 +313,13 @@ async function renderNetWorth() {
   const chartEl = document.getElementById('networth-chart');
   const max = Math.max(1, ...history.map(h => Math.abs(h.netWorth)));
 
-  if (history.every(h => h.assets === 0 && h.liabilities === 0)) {
+  const flatNoteEl = document.getElementById('networth-flat-note');
+  const isEmpty = history.every(h => h.assets === 0 && h.liabilities === 0);
+  const isFlat = !isEmpty && new Set(history.map(h => h.netWorth)).size === 1;
+
+  if (isEmpty) {
     chartEl.innerHTML = `<p class="empty-note">${t('networth.empty')}</p>`;
+    flatNoteEl.style.display = 'none';
   } else {
     chartEl.innerHTML = history.map(h => `
       <div class="trend-month">
@@ -326,6 +331,8 @@ async function renderNetWorth() {
         <span class="trend-month-label">${monthShortLabel(h.month)}</span>
       </div>
     `).join('');
+    flatNoteEl.textContent = isFlat ? t('networth.flatDataNote') : '';
+    flatNoteEl.style.display = isFlat ? '' : 'none';
   }
 
   document.getElementById('networth-list').innerHTML = history.map(h => `
