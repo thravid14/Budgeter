@@ -56,6 +56,24 @@ db.version(4).stores({
   standingOrders: '++id, name, fromAccountId, toAccountId'
 });
 
+// v5: adds Savings Goals — a target amount tied to one of the user's own
+// accounts (e.g. "ISA deposit target: £5,000" tied to their ISA account).
+// Deliberately doesn't track its own separate ledger of contributions —
+// progress is simply that account's current balance vs. the target, so any
+// Transfer or Standing Order that moves money into the account (e.g. a
+// monthly Standing Order into savings) automatically counts, with no extra
+// wiring needed.
+db.version(5).stores({
+  accounts: '++id, name',
+  categories: '++id, name, kind',
+  transactions: '++id, date, kind, accountId, categoryId, billId',
+  bills: '++id, name, categoryId, accountId',
+  transfers: '++id, date, fromAccountId, toAccountId, standingOrderId',
+  budgets: '++id, categoryId',
+  standingOrders: '++id, name, fromAccountId, toAccountId',
+  savingsGoals: '++id, accountId'
+});
+
 /* ---------------- Accounts ---------------- */
 
 async function addAccount({ name, type, startingBalance }) {
@@ -243,13 +261,14 @@ async function runAutoPayStandingOrders() {
    That keeps bills and transactions as the single source of truth.
 */
 
-async function addBill({ name, amount, categoryId, accountId, dueDay }) {
+async function addBill({ name, amount, categoryId, accountId, dueDay, isSubscription }) {
   return db.bills.add({
     name,
     amount: Number(amount) || 0,
     categoryId: Number(categoryId),
     accountId: Number(accountId),
-    dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1))
+    dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)),
+    isSubscription: !!isSubscription
   });
 }
 
@@ -259,6 +278,18 @@ async function getBills() {
 
 async function deleteBill(id) {
   return db.bills.delete(id);
+}
+
+async function setBillSubscription(id, isSubscription) {
+  return db.bills.update(id, { isSubscription: !!isSubscription });
+}
+
+// Sum of the monthly amount of every bill tagged as a subscription — a
+// quick "how much am I paying in subscriptions" total, independent of
+// whether each one has actually been paid yet this month.
+async function getSubscriptionMonthlyTotal() {
+  const bills = await getBills();
+  return bills.filter(b => b.isSubscription).reduce((sum, b) => sum + b.amount, 0);
 }
 
 // Marks a bill as paid for the given month by creating a real transaction linked to it.
@@ -348,10 +379,26 @@ async function getBillsWithStatus(monthStr) {
    comparing to that month's actual spending in getBudgetsWithProgress.
 */
 
-async function addBudget({ categoryId, amount }) {
+function todayMonthStr() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function shiftMonthStr(monthStr, delta) {
+  const [y, m] = monthStr.split('-').map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+async function addBudget({ categoryId, amount, rollover }) {
   return db.budgets.add({
     categoryId: Number(categoryId),
-    amount: Number(amount) || 0
+    amount: Number(amount) || 0,
+    rollover: !!rollover,
+    // Rollover only ever carries forward from the month it was switched on —
+    // never backdated — so turning it on doesn't invent retroactive credit
+    // out of months the budget wasn't actually being tracked against.
+    rolloverStartMonth: rollover ? todayMonthStr() : null
   });
 }
 
@@ -363,22 +410,93 @@ async function deleteBudget(id) {
   return db.budgets.delete(id);
 }
 
+// Turning rollover on (re)starts the carry baseline at the current month.
+// Turning it off just stops applying the carry to the displayed limit.
+async function setBudgetRollover(id, rollover) {
+  const patch = { rollover: !!rollover };
+  if (rollover) patch.rolloverStartMonth = todayMonthStr();
+  return db.budgets.update(id, patch);
+}
+
 // Returns budgets with computed spend/remaining/percent for a given month.
+// When a budget has rollover on, its effective limit for the month is the
+// base amount plus the running total of (amount - spent) for every month
+// since rolloverStartMonth — so an underspent month raises next month's
+// limit, an overspent month lowers it.
 async function getBudgetsWithProgress(monthStr) {
-  const [budgets, categories, breakdown] = await Promise.all([
-    getBudgets(), getCategories(), getCategoryBreakdown(monthStr)
+  const [budgets, categories, allTxs, breakdown] = await Promise.all([
+    getBudgets(), getCategories(), db.transactions.toArray(), getCategoryBreakdown(monthStr)
   ]);
+
+  const expenseTotalForMonth = (categoryId, mStr) => {
+    let total = 0;
+    for (const t of allTxs) {
+      if (t.kind === 'expense' && t.categoryId === categoryId && t.date.startsWith(mStr)) total += t.amount;
+    }
+    return total;
+  };
 
   return budgets.map(budget => {
     const category = categories.find(c => c.id === budget.categoryId);
     const row = breakdown.find(r => r.category && r.category.id === budget.categoryId);
     const spent = row ? row.total : 0;
-    const remaining = budget.amount - spent;
-    const percent = budget.amount > 0 ? Math.min(100, (spent / budget.amount) * 100) : 0;
-    const overBudget = spent > budget.amount;
 
-    return { ...budget, category, spent, remaining, percent, overBudget };
+    let carry = 0;
+    if (budget.rollover && budget.rolloverStartMonth && budget.rolloverStartMonth < monthStr) {
+      let cursor = budget.rolloverStartMonth;
+      let guard = 0;
+      while (cursor < monthStr && guard < 600) {
+        carry += budget.amount - expenseTotalForMonth(budget.categoryId, cursor);
+        cursor = shiftMonthStr(cursor, 1);
+        guard++;
+      }
+    }
+
+    const limit = budget.amount + carry;
+    const remaining = limit - spent;
+    const percent = limit > 0 ? Math.min(100, (spent / limit) * 100) : (spent > 0 ? 100 : 0);
+    const overBudget = spent > limit;
+
+    return { ...budget, category, spent, carry, limit, remaining, percent, overBudget };
   }).sort((a, b) => b.percent - a.percent);
+}
+
+/* ---------------- Savings Goals ----------------
+   A target amount tied to one of the user's own accounts. Progress is just
+   that account's current balance vs. the target — see the v5 schema comment
+   above for why there's no separate contribution ledger.
+*/
+
+async function addSavingsGoal({ name, targetAmount, accountId, targetDate }) {
+  return db.savingsGoals.add({
+    name,
+    targetAmount: Number(targetAmount) || 0,
+    accountId: Number(accountId),
+    targetDate: targetDate || null
+  });
+}
+
+async function getSavingsGoals() {
+  return db.savingsGoals.toArray();
+}
+
+async function deleteSavingsGoal(id) {
+  return db.savingsGoals.delete(id);
+}
+
+// Returns goals with computed current balance/remaining/percent/achieved.
+async function getSavingsGoalsWithProgress() {
+  const [goals, accounts] = await Promise.all([getSavingsGoals(), getAccounts()]);
+
+  return Promise.all(goals.map(async goal => {
+    const account = accounts.find(a => a.id === goal.accountId);
+    const current = account ? await getAccountBalance(goal.accountId) : 0;
+    const remaining = Math.max(0, goal.targetAmount - current);
+    const percent = goal.targetAmount > 0 ? Math.min(100, (current / goal.targetAmount) * 100) : 0;
+    const achieved = current >= goal.targetAmount;
+
+    return { ...goal, account, current, remaining, percent, achieved };
+  }));
 }
 
 /* ---------------- Data export / import (used by Sync) ----------------
@@ -388,20 +506,21 @@ async function getBudgetsWithProgress(monthStr) {
 */
 
 async function exportAllData() {
-  const [accounts, categories, transactions, bills, transfers, budgets, standingOrders] = await Promise.all([
+  const [accounts, categories, transactions, bills, transfers, budgets, standingOrders, savingsGoals] = await Promise.all([
     db.accounts.toArray(),
     db.categories.toArray(),
     db.transactions.toArray(),
     db.bills.toArray(),
     db.transfers.toArray(),
     db.budgets.toArray(),
-    db.standingOrders.toArray()
+    db.standingOrders.toArray(),
+    db.savingsGoals.toArray()
   ]);
-  return { accounts, categories, transactions, bills, transfers, budgets, standingOrders };
+  return { accounts, categories, transactions, bills, transfers, budgets, standingOrders, savingsGoals };
 }
 
 async function importAllData(data) {
-  const tables = [db.accounts, db.categories, db.transactions, db.bills, db.transfers, db.budgets, db.standingOrders];
+  const tables = [db.accounts, db.categories, db.transactions, db.bills, db.transfers, db.budgets, db.standingOrders, db.savingsGoals];
   await db.transaction('rw', tables, async () => {
     await Promise.all(tables.map(t => t.clear()));
     await Promise.all([
@@ -411,7 +530,8 @@ async function importAllData(data) {
       data.bills && data.bills.length ? db.bills.bulkAdd(data.bills) : null,
       data.transfers && data.transfers.length ? db.transfers.bulkAdd(data.transfers) : null,
       data.budgets && data.budgets.length ? db.budgets.bulkAdd(data.budgets) : null,
-      data.standingOrders && data.standingOrders.length ? db.standingOrders.bulkAdd(data.standingOrders) : null
+      data.standingOrders && data.standingOrders.length ? db.standingOrders.bulkAdd(data.standingOrders) : null,
+      data.savingsGoals && data.savingsGoals.length ? db.savingsGoals.bulkAdd(data.savingsGoals) : null
     ]);
   });
 }
@@ -450,6 +570,57 @@ async function getTotalBalance() {
     total += await getAccountBalance(acc.id);
   }
   return total;
+}
+
+// Projects the total balance forward over the next `days` using known
+// upcoming Bills only — Standing Orders move money between the user's own
+// accounts, so they never change the total, only Bills (which pay out to
+// someone else) do. This can't know about future income or day-to-day
+// spending that hasn't been added yet, so it's a floor/worst-case view, not
+// a prediction — the UI says so. Assumes days <= ~31 (checks this month and
+// next month only, which covers any window that size).
+async function getCashFlowForecast(days) {
+  const [balance, bills, txs] = await Promise.all([
+    getTotalBalance(), getBills(), db.transactions.toArray()
+  ]);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const endDate = new Date(today);
+  endDate.setDate(endDate.getDate() + days);
+
+  const events = [];
+  for (let mOffset = 0; mOffset <= 1; mOffset++) {
+    const y = today.getFullYear();
+    const m = today.getMonth() + 1 + mOffset;
+    const monthDate = new Date(y, m - 1, 1);
+    const monthStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}`;
+    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
+
+    for (const bill of bills) {
+      const day = Math.min(bill.dueDay, daysInMonth);
+      const dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+      if (dueDate < today || dueDate > endDate) continue;
+
+      const alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
+      if (alreadyPaid) continue;
+
+      const dueDateStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      events.push({ date: dueDateStr, name: bill.name, amount: bill.amount });
+    }
+  }
+
+  events.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  let running = balance;
+  let lowest = { balance: running, date: null };
+  const series = events.map(e => {
+    running -= e.amount;
+    if (running < lowest.balance) lowest = { balance: running, date: e.date };
+    return { ...e, balanceAfter: running };
+  });
+
+  return { startBalance: balance, days, events: series, lowest, endBalance: running };
 }
 
 // Splits accounts into assets (everything except credit cards) and

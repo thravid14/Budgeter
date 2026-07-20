@@ -58,7 +58,7 @@ async function renderDashboard() {
   const month = currentMonthStr();
   document.getElementById('month-label').textContent = monthLabel(month);
 
-  const [balance, { income, expense }, breakdown, allTx, allTransfers, categories, accounts, bills, netWorthTrend] = await Promise.all([
+  const [balance, { income, expense }, breakdown, allTx, allTransfers, categories, accounts, bills, netWorthTrend, forecast] = await Promise.all([
     getTotalBalance(),
     getMonthTotals(month),
     getCategoryBreakdown(month),
@@ -67,7 +67,8 @@ async function renderDashboard() {
     getCategories(),
     getAccounts(),
     getBillsWithStatus(month),
-    getNetWorthTrend(6)
+    getNetWorthTrend(6),
+    getCashFlowForecast(30)
   ]);
 
   document.getElementById('stat-balance').textContent = formatMoney(balance);
@@ -101,6 +102,33 @@ async function renderDashboard() {
   const recentEl = document.getElementById('recent-list');
   const recent = combineLedgerEntries(allTx, allTransfers).slice(0, 6);
   recentEl.innerHTML = renderLedgerRows(recent, categories, accounts, false);
+
+  renderCashFlowForecast(forecast);
+}
+
+function renderCashFlowForecast(forecast) {
+  const lowestEl = document.getElementById('cashflow-lowest');
+  const listEl = document.getElementById('cashflow-events');
+
+  if (forecast.events.length === 0) {
+    lowestEl.style.display = 'none';
+    listEl.innerHTML = `<p class="empty-note">${t('dashboard.cashFlowEmpty')}</p>`;
+    return;
+  }
+
+  lowestEl.style.display = '';
+  lowestEl.textContent = t('dashboard.cashFlowLowest', { amt: formatMoney(forecast.lowest.balance), date: formatUKDate(forecast.lowest.date) });
+
+  listEl.innerHTML = forecast.events.map(e => `
+    <div class="bill-row">
+      <div class="ledger-desc">
+        <span class="ledger-name">${escapeHtml(e.name)}</span>
+        <span class="ledger-meta">${formatUKDate(e.date)} · ${t('dashboard.cashFlowBalanceAfter', { amt: formatMoney(e.balanceAfter) })}</span>
+      </div>
+      <span class="ledger-leader"></span>
+      <span class="ledger-amount expense">-${formatMoney(e.amount)}</span>
+    </div>
+  `).join('');
 }
 
 // Merges transactions and transfers into one list for display, newest first.
@@ -186,11 +214,28 @@ function renderLedgerRows(entries, categories, accounts, withActions) {
 
 /* ---------------- Bills page ---------------- */
 
+let showSubscriptionsOnly = false;
+
 async function renderBills() {
   const month = currentMonthStr();
   const [bills, categories] = await Promise.all([getBillsWithStatus(month), getCategories()]);
   document.getElementById('bills-month-label').textContent = monthLabel(month);
-  document.getElementById('bill-list').innerHTML = renderBillRows(bills, categories, true);
+
+  const subs = bills.filter(b => b.isSubscription);
+  const subBar = document.getElementById('subscription-bar');
+  if (subs.length === 0) {
+    subBar.style.display = 'none';
+    showSubscriptionsOnly = false;
+  } else {
+    subBar.style.display = '';
+    const subTotal = subs.reduce((sum, b) => sum + b.amount, 0);
+    document.getElementById('subscription-total-label').textContent =
+      t('bills.subscriptionTotal', { amt: formatMoney(subTotal), count: subs.length });
+    document.getElementById('subscription-filter-toggle').checked = showSubscriptionsOnly;
+  }
+
+  const visible = showSubscriptionsOnly ? subs : bills;
+  document.getElementById('bill-list').innerHTML = renderBillRows(visible, categories, true);
 }
 
 // Shared bill renderer — used by both the dashboard's "upcoming" list and the full Bills page.
@@ -210,7 +255,7 @@ function renderBillRows(bills, categories, withActions) {
     return `
       <div class="bill-row" data-id="${b.id}">
         <div class="ledger-desc">
-          <span class="ledger-name">${escapeHtml(b.name)}</span>
+          <span class="ledger-name">${escapeHtml(b.name)}${b.isSubscription ? `<span class="subscription-tag">${t('bills.subscriptionBadge')}</span>` : ''}</span>
           <span class="ledger-meta">${cat ? escapeHtml(cat.name) : '—'} · ${t('bills.dueDayLabel', { n: b.dueDay })}</span>
         </div>
         <span class="ledger-leader"></span>
@@ -220,6 +265,7 @@ function renderBillRows(bills, categories, withActions) {
           ${b.status === 'paid'
             ? `<button class="btn-secondary btn-sm" data-action="unpay-bill" data-id="${b.id}" data-month="${month}">${t('bills.undo')}</button>`
             : `<button class="btn-primary btn-sm" data-action="pay-bill" data-id="${b.id}">${t('bills.markPaid')}</button>`}
+          ${withActions ? `<button class="btn-secondary btn-sm ${b.isSubscription ? 'active' : ''}" data-action="toggle-bill-subscription" data-id="${b.id}" data-next="${b.isSubscription ? '0' : '1'}" title="${b.isSubscription ? t('bills.subscriptionOnHint') : t('bills.subscriptionOffHint')}">${t('bills.subscriptionToggle')}</button>` : ''}
           ${withActions ? `<button class="icon-btn danger" data-action="delete-bill" data-id="${b.id}" aria-label="Delete">✕</button>` : ''}
         </div>
       </div>
@@ -289,14 +335,45 @@ async function renderBudgets() {
     <div class="panel budget-card" data-id="${b.id}">
       <div class="breakdown-top">
         <span>${b.category ? escapeHtml(b.category.name) : t('transactions.uncategorized')}</span>
-        <span>${formatMoney(b.spent)} ${t('budgets.of')} ${formatMoney(b.amount)}</span>
+        <span>${formatMoney(b.spent)} ${t('budgets.of')} ${formatMoney(b.limit)}</span>
       </div>
       <div class="breakdown-bar-track">
         <div class="breakdown-bar-fill ${b.overBudget ? 'over' : ''}" style="width:${b.percent}%; background:${b.overBudget ? 'var(--expense)' : (b.category ? b.category.color : 'var(--gold)')}"></div>
       </div>
+      ${b.rollover && b.carry !== 0 ? `<p class="ledger-meta budget-rollover-note">${b.carry > 0 ? t('budgets.rolloverCredit', { amt: formatMoney(b.carry) }) : t('budgets.rolloverDebit', { amt: formatMoney(Math.abs(b.carry)) })}</p>` : ''}
       <div class="budget-foot">
         <span class="ledger-meta">${b.overBudget ? t('budgets.overBy', { amt: formatMoney(Math.abs(b.remaining)) }) : t('budgets.remaining', { amt: formatMoney(b.remaining) })}</span>
-        <button class="icon-btn danger" data-action="delete-budget" data-id="${b.id}" aria-label="Delete">✕</button>
+        <div class="budget-actions">
+          <button class="icon-btn ${b.rollover ? 'active' : ''}" data-action="toggle-budget-rollover" data-id="${b.id}" data-next="${b.rollover ? '0' : '1'}" aria-label="${t('budgets.rolloverToggle')}" title="${b.rollover ? t('budgets.rolloverOnHint') : t('budgets.rolloverOffHint')}">↻</button>
+          <button class="icon-btn danger" data-action="delete-budget" data-id="${b.id}" aria-label="Delete">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ---------------- Savings Goals page ---------------- */
+
+async function renderSavingsGoals() {
+  const goals = await getSavingsGoalsWithProgress();
+  const el = document.getElementById('savingsgoal-list');
+  if (goals.length === 0) {
+    el.innerHTML = `<p class="empty-note">${t('savingsGoals.empty')}</p>`;
+    return;
+  }
+  el.innerHTML = goals.map(g => `
+    <div class="panel budget-card" data-id="${g.id}">
+      <div class="breakdown-top">
+        <span>${escapeHtml(g.name)}</span>
+        <span>${formatMoney(g.current)} ${t('budgets.of')} ${formatMoney(g.targetAmount)}</span>
+      </div>
+      <div class="breakdown-bar-track">
+        <div class="breakdown-bar-fill ${g.achieved ? 'achieved' : ''}" style="width:${g.percent}%; background:${g.achieved ? 'var(--income)' : 'var(--gold)'}"></div>
+      </div>
+      <p class="ledger-meta">${g.account ? escapeHtml(g.account.name) : '—'}${g.targetDate ? ' · ' + t('savingsGoals.byDate', { date: formatUKDate(g.targetDate) }) : ''}</p>
+      <div class="budget-foot">
+        <span class="ledger-meta">${g.achieved ? t('savingsGoals.reached') : t('savingsGoals.remaining', { amt: formatMoney(g.remaining) })}</span>
+        <button class="icon-btn danger" data-action="delete-savingsgoal" data-id="${g.id}" aria-label="Delete">✕</button>
       </div>
     </div>
   `).join('');
@@ -596,7 +673,7 @@ function buildBudgetsShareText(budgets) {
   let text = `My budgets for ${monthLabel(currentMonthStr())}:\n`;
   budgets.forEach(b => {
     const name = b.category ? b.category.name : 'Uncategorised';
-    text += `• ${name}: ${formatMoney(b.spent)} of ${formatMoney(b.amount)}${b.overBudget ? ' (over budget)' : ''}\n`;
+    text += `• ${name}: ${formatMoney(b.spent)} of ${formatMoney(b.limit)}${b.overBudget ? ' (over budget)' : ''}\n`;
   });
   return text + '— via Budgeter';
 }

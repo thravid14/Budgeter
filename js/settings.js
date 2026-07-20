@@ -24,6 +24,8 @@ const NAV_REGISTRY = [
     icon: '<path d="M3 12a9 9 0 1 1 3 6.7"/><path d="M3 16v-4h4"/>' },
   { id: 'budgets', labelKey: 'nav.budgets',
     icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>' },
+  { id: 'savingsgoals', labelKey: 'nav.savingsGoals',
+    icon: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/>' },
   { id: 'trends', labelKey: 'nav.trends',
     icon: '<path d="M4 19h16"/><path d="M4 19l5-6 4 3 6-9"/>' },
   { id: 'networth', labelKey: 'nav.networth',
@@ -43,6 +45,7 @@ const NAV_REGISTRY = [
 const DASHBOARD_REGISTRY = [
   { id: 'summary', labelKey: 'settings.panelSummary' },
   { id: 'upcomingBills', labelKey: 'dashboard.upcomingBills' },
+  { id: 'cashFlowForecast', labelKey: 'dashboard.cashFlowForecast' },
   { id: 'spendingByCategory', labelKey: 'dashboard.spendingByCategory' },
   { id: 'recentTransactions', labelKey: 'dashboard.recentTransactions' }
 ];

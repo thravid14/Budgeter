@@ -213,6 +213,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .breakdown-bar-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .breakdown-bar-fill { height: 100%; background: var(--gold); transition: width 0.3s var(--ease); }
 .breakdown-bar-fill.over { background: var(--expense); }
+.breakdown-bar-fill.achieved { background: var(--income); }
 
 /* ===== Trends / Net worth charts ===== */
 .trend-legend { display: flex; gap: 18px; margin-bottom: 16px; font-size: 0.8rem; color: var(--text-dim); }
@@ -271,6 +272,8 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
 .budget-card { margin-bottom: 0; }
 .budget-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.budget-actions { display: flex; gap: 6px; }
+.budget-rollover-note { margin: 6px 0 0; }
 
 /* ===== Buttons ===== */
 .btn-primary {
@@ -311,6 +314,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .icon-btn:hover { color: var(--text); border-color: var(--text-dim); }
 .icon-btn.danger:hover { color: var(--expense); border-color: var(--expense); }
+.icon-btn.active { color: var(--gold); border-color: var(--gold); }
 
 /* ===== Filters ===== */
 .filter-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -509,3 +513,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .bill-status.due-soon { color: var(--gold); border-color: var(--gold); }
 .bill-status.upcoming { color: var(--text-dim); border-color: var(--line); }
 .btn-sm { padding: 6px 12px; font-size: 0.78rem; }
+.btn-secondary.btn-sm.active { color: var(--gold); border-color: var(--gold); }
+.subscription-tag {
+  display: inline-block; margin-left: 6px; padding: 1px 6px;
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--gold); border: 1px solid var(--gold); border-radius: 4px;
+  vertical-align: middle;
+}
+.subscription-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap; margin-bottom: 14px; padding: 10px 12px;
+  background: var(--surface-raised); border: 1px solid var(--line);
+  border-radius: 8px; font-size: 0.85rem;
+}

@@ -71,6 +71,7 @@ async function refreshCurrentView() {
   if (currentView === 'bills') await renderBills();
   if (currentView === 'standingorders') await renderStandingOrders();
   if (currentView === 'budgets') await renderBudgets();
+  if (currentView === 'savingsgoals') await renderSavingsGoals();
   if (currentView === 'trends') await renderTrends();
   if (currentView === 'networth') await renderNetWorth();
   if (currentView === 'categories') await renderCategories();
@@ -597,6 +598,9 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
         <select id="bill-category">${categories.filter(c => c.kind === 'expense').map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}</select>
       </div>
     </div>
+    <div class="form-field">
+      <label class="settings-check"><input type="checkbox" id="bill-subscription" /> ${t('bills.subscriptionCheckbox')}</label>
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" id="bill-cancel">Cancel</button>
       <button class="btn-primary" id="bill-save">Save</button>
@@ -617,12 +621,18 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
       amount,
       dueDay,
       accountId: document.getElementById('bill-account').value,
-      categoryId: document.getElementById('bill-category').value
+      categoryId: document.getElementById('bill-category').value,
+      isSubscription: document.getElementById('bill-subscription').checked
     });
     closeModal();
     refreshCurrentView();
     showToast(t('toast.billAdded'));
   });
+});
+
+document.getElementById('subscription-filter-toggle').addEventListener('change', (e) => {
+  showSubscriptionsOnly = e.target.checked;
+  renderBills();
 });
 
 /* ---------------- Add Standing Order ---------------- */
@@ -716,6 +726,10 @@ document.getElementById('btn-add-budget').addEventListener('click', async () => 
       <label>Monthly limit</label>
       <input type="number" step="0.01" min="0" id="bud-amount" placeholder="0.00" />
     </div>
+    <div class="form-field">
+      <label class="settings-check"><input type="checkbox" id="bud-rollover" /> ${t('budgets.rolloverCheckbox')}</label>
+      <p class="ledger-meta">${t('budgets.rolloverCheckboxHint')}</p>
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" id="bud-cancel">Cancel</button>
       <button class="btn-primary" id="bud-save">Save</button>
@@ -728,11 +742,66 @@ document.getElementById('btn-add-budget').addEventListener('click', async () => 
     if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
     await addBudget({
       categoryId: document.getElementById('bud-category').value,
-      amount
+      amount,
+      rollover: document.getElementById('bud-rollover').checked
     });
     closeModal();
     refreshCurrentView();
     showToast(t('toast.budgetAdded'));
+  });
+});
+
+/* ---------------- Add Savings Goal ---------------- */
+
+document.getElementById('btn-add-savingsgoal').addEventListener('click', async () => {
+  const accounts = await getAccounts();
+
+  if (accounts.length === 0) {
+    openModal('Add an account first', `<p class="empty-note">You need at least one account before setting a savings goal.</p>`);
+    return;
+  }
+
+  openModal(t('modalTitle.addSavingsGoal'), `
+    <div class="form-field">
+      <label>Name</label>
+      <input type="text" id="goal-name" placeholder="e.g. ISA deposit target" />
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Target amount</label>
+        <input type="number" step="0.01" min="0" id="goal-amount" placeholder="0.00" />
+      </div>
+      <div class="form-field">
+        <label>Target date (optional)</label>
+        <input type="date" id="goal-date" />
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Account</label>
+      <select id="goal-account">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+    </div>
+    <div class="form-actions">
+      <button class="btn-secondary" id="goal-cancel">Cancel</button>
+      <button class="btn-primary" id="goal-save">Save</button>
+    </div>
+  `);
+
+  document.getElementById('goal-cancel').addEventListener('click', closeModal);
+  document.getElementById('goal-save').addEventListener('click', async () => {
+    const name = document.getElementById('goal-name').value.trim();
+    const targetAmount = document.getElementById('goal-amount').value;
+    if (!name) { alert('Enter a goal name.'); return; }
+    if (!targetAmount || Number(targetAmount) <= 0) { alert('Enter a target amount greater than 0.'); return; }
+
+    await addSavingsGoal({
+      name,
+      targetAmount,
+      accountId: document.getElementById('goal-account').value,
+      targetDate: document.getElementById('goal-date').value
+    });
+    closeModal();
+    refreshCurrentView();
+    showToast(t('toast.savingsGoalAdded'));
   });
 });
 
@@ -755,11 +824,26 @@ document.addEventListener('click', async (e) => {
   if (btn.dataset.action === 'delete-bill') {
     if (confirm('Delete this bill? Past transactions from it are kept.')) { await deleteBill(id); refreshCurrentView(); showToast(t('toast.billDeleted')); }
   }
+  if (btn.dataset.action === 'toggle-bill-subscription') {
+    const next = btn.dataset.next === '1';
+    await setBillSubscription(id, next);
+    refreshCurrentView();
+    showToast(next ? t('toast.billSubscriptionOn') : t('toast.billSubscriptionOff'));
+  }
   if (btn.dataset.action === 'delete-transfer') {
     if (confirm('Delete this transfer?')) { await deleteTransfer(id); refreshCurrentView(); showToast(t('toast.transferDeleted')); }
   }
+  if (btn.dataset.action === 'toggle-budget-rollover') {
+    const next = btn.dataset.next === '1';
+    await setBudgetRollover(id, next);
+    refreshCurrentView();
+    showToast(next ? t('toast.budgetRolloverOn') : t('toast.budgetRolloverOff'));
+  }
   if (btn.dataset.action === 'delete-budget') {
     if (confirm('Delete this budget?')) { await deleteBudget(id); refreshCurrentView(); showToast(t('toast.budgetDeleted')); }
+  }
+  if (btn.dataset.action === 'delete-savingsgoal') {
+    if (confirm('Delete this savings goal?')) { await deleteSavingsGoal(id); refreshCurrentView(); showToast(t('toast.savingsGoalDeleted')); }
   }
   if (btn.dataset.action === 'pay-bill') {
     const today = new Date().toISOString().slice(0, 10);

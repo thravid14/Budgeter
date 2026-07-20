@@ -22,7 +22,7 @@ const translations = {
     nav: {
       dashboard: 'Dashboard', transactions: 'Transactions', bills: 'Bills',
       standingOrders: 'Standing Orders',
-      budgets: 'Budgets', trends: 'Trends', networth: 'Net worth',
+      budgets: 'Budgets', savingsGoals: 'Savings Goals', trends: 'Trends', networth: 'Net worth',
       categories: 'Categories', accounts: 'Accounts', sync: 'Sync', help: 'Help', settings: 'Settings'
     },
     settings: {
@@ -40,7 +40,12 @@ const translations = {
       balance: 'Total balance', income: 'Income (this month)', expense: 'Expenses (this month)',
       upcomingBills: 'Upcoming bills', spendingByCategory: 'Spending by category',
       thisMonth: 'this month', recentTransactions: 'Recent transactions',
-      emptyBreakdown: 'No expenses recorded this month yet.'
+      emptyBreakdown: 'No expenses recorded this month yet.',
+      cashFlowForecast: 'Cash flow forecast', cashFlowSub: 'next 30 days',
+      cashFlowLowest: 'Lowest projected: {amt} on {date}',
+      cashFlowBalanceAfter: 'balance after: {amt}',
+      cashFlowEmpty: 'No bills due in the next 30 days — nothing to project.',
+      cashFlowNote: "Only accounts for bills you've already added — doesn't predict income or day-to-day spending."
     },
     common: { income: 'Income', expense: 'Expense' },
     transactions: {
@@ -54,7 +59,13 @@ const translations = {
       title: 'Bills', addBill: '+ Add bill',
       empty: "No bills yet. Add rent, subscriptions, or utilities to track what's due.",
       paid: 'Paid', overdue: 'Overdue {n}d', dueToday: 'Due today', dueIn: 'Due in {n}d',
-      markPaid: 'Mark paid', undo: 'Undo', dueDayLabel: 'due day {n}'
+      markPaid: 'Mark paid', undo: 'Undo', dueDayLabel: 'due day {n}',
+      subscriptionCheckbox: 'This is a subscription (Netflix, Spotify, gym, etc.)',
+      subscriptionBadge: 'Subscription',
+      subscriptionToggle: 'Sub', subscriptionOnHint: 'Tagged as a subscription — click to untag',
+      subscriptionOffHint: 'Not tagged as a subscription — click to tag',
+      subscriptionsOnly: 'Show subscriptions only',
+      subscriptionTotal: '{count} subscriptions · {amt}/month'
     },
     standingOrders: {
       title: 'Standing Orders', addStandingOrder: '+ Add standing order',
@@ -63,7 +74,18 @@ const translations = {
     budgets: {
       title: 'Budgets', addBudget: '+ Add budget',
       empty: 'No budgets yet. Set a monthly limit for a category to track progress.',
-      of: 'of', remaining: '{amt} remaining', overBy: 'Over by {amt}'
+      of: 'of', remaining: '{amt} remaining', overBy: 'Over by {amt}',
+      rolloverCheckbox: 'Roll over unused amount into next month',
+      rolloverCheckboxHint: 'If you underspend, the leftover raises next month\'s limit. If you overspend, it lowers it. Starts from this month — no retroactive credit.',
+      rolloverCredit: '+{amt} rolled over from previous months',
+      rolloverDebit: '-{amt} carried over from overspending previous months',
+      rolloverToggle: 'Toggle rollover', rolloverOnHint: 'Rollover is on — click to turn off',
+      rolloverOffHint: 'Rollover is off — click to turn on'
+    },
+    savingsGoals: {
+      title: 'Savings Goals', sub: 'Target amount tied to one of your accounts', addGoal: '+ Add goal',
+      empty: 'No savings goals yet. Set a target amount for an account, like an ISA deposit target.',
+      byDate: 'by {date}', reached: 'Goal reached', remaining: '{amt} to go'
     },
     trends: {
       title: 'Trends', sub: 'Income vs expenses, last 6 months',
@@ -99,15 +121,17 @@ const translations = {
     help: {
       title: 'Help', sub: 'What everything does, in plain language',
       dashboardHeading: 'Dashboard',
-      dashboardBody: "Your at-a-glance overview: total balance across all accounts (with a small trend line showing the last 6 months), this month's income and expenses, upcoming bills, a breakdown of spending by category, and your most recent transactions.",
+      dashboardBody: "Your at-a-glance overview: total balance across all accounts (with a small trend line showing the last 6 months), this month's income and expenses, upcoming bills, a 30-day cash flow forecast, a breakdown of spending by category, and your most recent transactions. The forecast projects your balance forward using bills you've already added — it lowers the balance on each bill's due date and flags the lowest point it expects to reach, so you can spot a tight patch coming. It can't know about income or day-to-day spending you haven't recorded, so treat it as a floor, not a prediction.",
       transactionsHeading: 'Transactions',
       transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, filter by account, category, or month, and export or import your transaction history as a CSV file.',
       billsHeading: 'Bills',
-      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date.',
+      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date. Tick "This is a subscription" (or use the "Sub" button on an existing bill) to tag things like Netflix or Spotify — a running monthly subscription total and a filter to show just those appears above the list once you\'ve tagged at least one.',
       standingOrdersHeading: 'Standing Orders',
       standingOrdersBody: "The UK banking term for a recurring transfer between two of your own accounts — for example, moving £200 into savings on the 1st of every month. Works exactly like Bills, but moves money between your own accounts instead of paying an expense, so it never counts as income or spending and correctly updates both accounts' balances. Use this (not a Bill, and not a category) for anything that's really just you moving your own money around.",
       budgetsHeading: 'Budgets',
-      budgetsBody: 'Set a monthly £ limit for a spending category (e.g. £200 for Groceries). The progress bar fills up as you spend during the month and turns red if you go over — one budget per category.',
+      budgetsBody: "Set a monthly £ limit for a spending category (e.g. £200 for Groceries). The progress bar fills up as you spend during the month and turns red if you go over — one budget per category. Turn on \"Roll over unused amount\" (the ↻ button on a budget, or the checkbox when adding one) and any amount you don't spend raises next month's limit, while overspending lowers it — it only starts counting from the month you switch it on, never backdated.",
+      savingsGoalsHeading: 'Savings Goals',
+      savingsGoalsBody: "Set a target amount tied to one of your accounts — e.g. an \"ISA deposit target: £5,000\" goal tied to your ISA account. There's no separate pot to top up: progress is simply that account's current balance against the target, so any Transfer or Standing Order that moves money into the account counts automatically.",
       trendsHeading: 'Trends',
       trendsBody: 'Income vs expenses over the last 6 months, as a chart and a month-by-month list, so you can spot patterns beyond just the current month.',
       networthHeading: 'Net worth',
@@ -146,19 +170,24 @@ const translations = {
       standingOrderAdded: 'Standing order added.', standingOrderDeleted: 'Standing order deleted.',
       standingOrderPaid: 'Standing order marked as done.', standingOrderUnpaid: 'Standing order marked as not done.',
       standingOrderAutoPaid: '{name} ({amount}) transferred automatically.',
-      standingOrdersAutoPaid: '{count} standing orders transferred automatically: {names}.'
+      standingOrdersAutoPaid: '{count} standing orders transferred automatically: {names}.',
+      budgetRolloverOn: 'Rollover turned on for this budget.',
+      budgetRolloverOff: 'Rollover turned off for this budget.',
+      billSubscriptionOn: 'Tagged as a subscription.',
+      billSubscriptionOff: 'Untagged as a subscription.',
+      savingsGoalAdded: 'Savings goal added.', savingsGoalDeleted: 'Savings goal deleted.'
     },
     modalTitle: {
       addTransaction: 'Add transaction', addTransfer: 'Transfer between accounts',
       addCategory: 'Add category', addAccount: 'Add account', addBill: 'Add bill',
-      addBudget: 'Add budget', addStandingOrder: 'Add standing order'
+      addBudget: 'Add budget', addStandingOrder: 'Add standing order', addSavingsGoal: 'Add savings goal'
     }
   },
   es: {
     nav: {
       dashboard: 'Panel', transactions: 'Transacciones', bills: 'Facturas',
       standingOrders: 'Órdenes permanentes',
-      budgets: 'Presupuestos', trends: 'Tendencias', networth: 'Patrimonio neto',
+      budgets: 'Presupuestos', savingsGoals: 'Metas de ahorro', trends: 'Tendencias', networth: 'Patrimonio neto',
       categories: 'Categorías', accounts: 'Cuentas', sync: 'Sincronización', help: 'Ayuda', settings: 'Ajustes'
     },
     settings: {
@@ -176,7 +205,12 @@ const translations = {
       balance: 'Saldo total', income: 'Ingresos (este mes)', expense: 'Gastos (este mes)',
       upcomingBills: 'Próximas facturas', spendingByCategory: 'Gastos por categoría',
       thisMonth: 'este mes', recentTransactions: 'Transacciones recientes',
-      emptyBreakdown: 'Aún no se han registrado gastos este mes.'
+      emptyBreakdown: 'Aún no se han registrado gastos este mes.',
+      cashFlowForecast: 'Previsión de flujo de caja', cashFlowSub: 'próximos 30 días',
+      cashFlowLowest: 'Punto más bajo previsto: {amt} el {date}',
+      cashFlowBalanceAfter: 'saldo después: {amt}',
+      cashFlowEmpty: 'No hay facturas que venzan en los próximos 30 días — nada que prever.',
+      cashFlowNote: 'Solo tiene en cuenta las facturas que ya has añadido — no predice ingresos ni gastos del día a día.'
     },
     common: { income: 'Ingreso', expense: 'Gasto' },
     transactions: {
@@ -190,7 +224,13 @@ const translations = {
       title: 'Facturas', addBill: '+ Añadir factura',
       empty: 'Aún no hay facturas. Añade el alquiler, suscripciones o servicios para ver lo que vence.',
       paid: 'Pagada', overdue: 'Vencida hace {n}d', dueToday: 'Vence hoy', dueIn: 'Vence en {n}d',
-      markPaid: 'Marcar como pagada', undo: 'Deshacer', dueDayLabel: 'día de vencimiento {n}'
+      markPaid: 'Marcar como pagada', undo: 'Deshacer', dueDayLabel: 'día de vencimiento {n}',
+      subscriptionCheckbox: 'Es una suscripción (Netflix, Spotify, gimnasio, etc.)',
+      subscriptionBadge: 'Suscripción',
+      subscriptionToggle: 'Sus', subscriptionOnHint: 'Marcada como suscripción — pulsa para desmarcar',
+      subscriptionOffHint: 'No marcada como suscripción — pulsa para marcar',
+      subscriptionsOnly: 'Mostrar solo suscripciones',
+      subscriptionTotal: '{count} suscripciones · {amt}/mes'
     },
     standingOrders: {
       title: 'Órdenes permanentes', addStandingOrder: '+ Añadir orden permanente',
@@ -199,7 +239,18 @@ const translations = {
     budgets: {
       title: 'Presupuestos', addBudget: '+ Añadir presupuesto',
       empty: 'Aún no hay presupuestos. Establece un límite mensual para una categoría.',
-      of: 'de', remaining: '{amt} restante', overBy: 'Superado por {amt}'
+      of: 'de', remaining: '{amt} restante', overBy: 'Superado por {amt}',
+      rolloverCheckbox: 'Trasladar la cantidad no usada al mes siguiente',
+      rolloverCheckboxHint: 'Si gastas menos, lo sobrante aumenta el límite del próximo mes. Si te pasas, lo reduce. Empieza desde este mes — sin crédito retroactivo.',
+      rolloverCredit: '+{amt} trasladado de meses anteriores',
+      rolloverDebit: '-{amt} trasladado por exceso de gasto en meses anteriores',
+      rolloverToggle: 'Alternar traslado', rolloverOnHint: 'El traslado está activado — pulsa para desactivar',
+      rolloverOffHint: 'El traslado está desactivado — pulsa para activar'
+    },
+    savingsGoals: {
+      title: 'Metas de ahorro', sub: 'Importe objetivo vinculado a una de tus cuentas', addGoal: '+ Añadir meta',
+      empty: 'Aún no hay metas de ahorro. Establece un importe objetivo para una cuenta, como un objetivo de depósito ISA.',
+      byDate: 'para el {date}', reached: 'Meta alcanzada', remaining: '{amt} restante'
     },
     trends: {
       title: 'Tendencias', sub: 'Ingresos frente a gastos, últimos 6 meses',
@@ -235,15 +286,17 @@ const translations = {
     help: {
       title: 'Ayuda', sub: 'Qué hace cada cosa, en lenguaje sencillo',
       dashboardHeading: 'Panel',
-      dashboardBody: 'Tu resumen de un vistazo: saldo total de todas las cuentas (con una pequeña línea de tendencia de los últimos 6 meses), ingresos y gastos de este mes, próximas facturas, un desglose del gasto por categoría y tus transacciones más recientes.',
+      dashboardBody: 'Tu resumen de un vistazo: saldo total de todas las cuentas (con una pequeña línea de tendencia de los últimos 6 meses), ingresos y gastos de este mes, próximas facturas, una previsión de flujo de caja a 30 días, un desglose del gasto por categoría y tus transacciones más recientes. La previsión proyecta tu saldo hacia adelante usando las facturas que ya has añadido — lo reduce en la fecha de vencimiento de cada factura y señala el punto más bajo que espera alcanzar, para que puedas anticipar un momento ajustado. No puede saber sobre ingresos o gastos del día a día que no hayas registrado, así que trátala como un suelo, no como una predicción.',
       transactionsHeading: 'Transacciones',
       transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, filtra por cuenta, categoría o mes, y exporta o importa tu historial de transacciones como archivo CSV.',
       billsHeading: 'Facturas',
-      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento.',
+      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento. Marca "Es una suscripción" (o usa el botón "Sus" en una factura ya creada) para etiquetar cosas como Netflix o Spotify — un total mensual de suscripciones y un filtro para mostrar solo esas aparece encima de la lista en cuanto etiquetes al menos una.',
       standingOrdersHeading: 'Órdenes permanentes',
       standingOrdersBody: 'El término bancario del Reino Unido para una transferencia recurrente entre dos de tus propias cuentas — por ejemplo, mover 200 £ a ahorros el día 1 de cada mes. Funciona igual que las Facturas, pero mueve dinero entre tus propias cuentas en lugar de pagar un gasto, por lo que nunca cuenta como ingreso o gasto y actualiza correctamente el saldo de ambas cuentas. Usa esto (no una Factura, ni una categoría) para cualquier cosa que en realidad sea simplemente mover tu propio dinero.',
       budgetsHeading: 'Presupuestos',
-      budgetsBody: 'Establece un límite mensual en £ para una categoría de gasto (p. ej. £200 para Compras). La barra de progreso se llena a medida que gastas durante el mes y se pone roja si te pasas — un presupuesto por categoría.',
+      budgetsBody: 'Establece un límite mensual en £ para una categoría de gasto (p. ej. £200 para Compras). La barra de progreso se llena a medida que gastas durante el mes y se pone roja si te pasas — un presupuesto por categoría. Activa "Trasladar la cantidad no usada" (el botón ↻ en un presupuesto, o la casilla al añadir uno) y lo que no gastes aumentará el límite del próximo mes, mientras que gastar de más lo reducirá — solo empieza a contar desde el mes en que lo activas, nunca con efecto retroactivo.',
+      savingsGoalsHeading: 'Metas de ahorro',
+      savingsGoalsBody: 'Establece un importe objetivo vinculado a una de tus cuentas — p. ej. una meta "Objetivo de depósito ISA: £5.000" vinculada a tu cuenta ISA. No hay un fondo aparte que rellenar: el progreso es simplemente el saldo actual de esa cuenta frente al objetivo, así que cualquier Transferencia u Orden permanente que mueva dinero a la cuenta cuenta automáticamente.',
       trendsHeading: 'Tendencias',
       trendsBody: 'Ingresos frente a gastos durante los últimos 6 meses, como gráfico y como lista mes a mes, para detectar patrones más allá del mes actual.',
       networthHeading: 'Patrimonio neto',
@@ -282,12 +335,17 @@ const translations = {
       standingOrderAdded: 'Orden permanente añadida.', standingOrderDeleted: 'Orden permanente eliminada.',
       standingOrderPaid: 'Orden permanente marcada como realizada.', standingOrderUnpaid: 'Orden permanente marcada como no realizada.',
       standingOrderAutoPaid: '{name} ({amount}) transferida automáticamente.',
-      standingOrdersAutoPaid: '{count} órdenes permanentes transferidas automáticamente: {names}.'
+      standingOrdersAutoPaid: '{count} órdenes permanentes transferidas automáticamente: {names}.',
+      budgetRolloverOn: 'Traslado activado para este presupuesto.',
+      budgetRolloverOff: 'Traslado desactivado para este presupuesto.',
+      billSubscriptionOn: 'Marcada como suscripción.',
+      billSubscriptionOff: 'Desmarcada como suscripción.',
+      savingsGoalAdded: 'Meta de ahorro añadida.', savingsGoalDeleted: 'Meta de ahorro eliminada.'
     },
     modalTitle: {
       addTransaction: 'Añadir transacción', addTransfer: 'Transferir entre cuentas',
       addCategory: 'Añadir categoría', addAccount: 'Añadir cuenta', addBill: 'Añadir factura',
-      addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente'
+      addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente', addSavingsGoal: 'Añadir meta de ahorro'
     }
   }
 };

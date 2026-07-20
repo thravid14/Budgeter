@@ -73,6 +73,15 @@
           </div>
         </div>
 
+        <div data-panel="cashFlowForecast">
+          <div class="panel">
+            <h2><span data-i18n="dashboard.cashFlowForecast">Cash flow forecast</span> <span class="sub" data-i18n="dashboard.cashFlowSub">next 30 days</span></h2>
+            <p class="ledger-meta" id="cashflow-lowest"></p>
+            <div id="cashflow-events" class="ledger-list"></div>
+            <p class="empty-note" data-i18n="dashboard.cashFlowNote">Only accounts for bills you've already added — doesn't predict income or day-to-day spending.</p>
+          </div>
+        </div>
+
         <div data-panel="spendingByCategory">
           <div class="panel">
             <h2><span data-i18n="dashboard.spendingByCategory">Spending by category</span> <span class="sub" data-i18n="dashboard.thisMonth">this month</span></h2>
@@ -119,6 +128,10 @@
         <p class="sub" id="bills-month-label"></p>
         <button class="btn-primary" id="btn-add-bill" data-i18n="bills.addBill">+ Add bill</button>
       </header>
+      <div class="subscription-bar" id="subscription-bar" style="display:none">
+        <span id="subscription-total-label"></span>
+        <label class="settings-check"><input type="checkbox" id="subscription-filter-toggle" /> <span data-i18n="bills.subscriptionsOnly">Show subscriptions only</span></label>
+      </div>
       <div id="bill-list" class="ledger-list full"></div>
     </section>
 
@@ -143,6 +156,15 @@
         </div>
       </header>
       <div id="budget-list" class="budget-grid"></div>
+    </section>
+
+    <section id="view-savingsgoals" class="view">
+      <header class="view-header">
+        <h1 data-i18n="savingsGoals.title">Savings Goals</h1>
+        <p class="sub" data-i18n="savingsGoals.sub">Target amount tied to one of your accounts</p>
+        <button class="btn-primary" id="btn-add-savingsgoal" data-i18n="savingsGoals.addGoal">+ Add goal</button>
+      </header>
+      <div id="savingsgoal-list" class="budget-grid"></div>
     </section>
 
     <section id="view-trends" class="view">
@@ -250,8 +272,8 @@
         <h2 data-i18n="help.dashboardHeading">Dashboard</h2>
         <p data-i18n="help.dashboardBody">Your at-a-glance overview: total balance across all accounts (with a
           small trend line showing the last 6 months), this month's income and
-          expenses, upcoming bills, a breakdown of spending by category, and
-          your most recent transactions.</p>
+          expenses, upcoming bills, a 30-day cash flow forecast, a breakdown of
+          spending by category, and your most recent transactions.</p>
       </div>
       <div class="panel">
         <h2 data-i18n="help.transactionsHeading">Transactions</h2>
@@ -288,6 +310,13 @@
         <p data-i18n="help.budgetsBody">Set a monthly £ limit for a spending category (e.g. £200 for
           Groceries). The progress bar fills up as you spend during the
           month and turns red if you go over — one budget per category.</p>
+      </div>
+      <div class="panel">
+        <h2 data-i18n="help.savingsGoalsHeading">Savings Goals</h2>
+        <p data-i18n="help.savingsGoalsBody">Set a target amount tied to one of your accounts — e.g. an
+          "ISA deposit target: £5,000" goal tied to your ISA account. There's no separate pot to top up:
+          progress is simply that account's current balance against the target, so any Transfer or Standing
+          Order that moves money into the account counts automatically.</p>
       </div>
       <div class="panel">
         <h2 data-i18n="help.trendsHeading">Trends</h2>

@@ -15,6 +15,13 @@
 - **Clarified how Transfers work vs Categories** — a "Transfer to Revolut" entry had been set up as a recurring *Bill*, which isn't right: Bills always create an expense from one account and never credit the destination, so it was quietly understating that account's balance and overstating monthly spending — and would now have kept doing that automatically every month once bill auto-pay landed. The fix is to use the dedicated **"+ Transfer"** button for *any* movement between your own accounts (including into savings/ISA) instead — it correctly moves money between both accounts without touching income/expense totals. (The "Transfer to Revolut" bill entries themselves need deleting manually from your device — Budgeter can't reach your live data from here — see the Bills page, delete any entry with that name, then re-create it as a Standing Order below instead.)
 - **New "Standing Orders" page** — the proper fix for the Revolut situation above. This is a recurring *transfer* between two of your own accounts (the UK banking term for it), e.g. moving £200 into savings on the 1st of every month. It works exactly like Bills — set it up once, it pays itself automatically from then on, shows Due/Overdue/Paid status, and Undo is there if something looks wrong — but instead of creating an expense, it moves money between both accounts correctly, so it never distorts your income/expense totals. Same open-app limitation as Bills: it catches up next time you open Budgeter on or after the due date, not necessarily the exact moment.
 
+## New features (from a look at Emma and Quicken Simplifi)
+
+- **Budgets can now roll over.** Turn on "Roll over unused amount" on any budget (the ↻ button on the card, or the checkbox when adding one) and whatever you don't spend raises next month's limit — overspending lowers it instead. It only starts counting from the month you switch it on, so turning it on today doesn't invent credit out of months before you opted in.
+- **Bills can be tagged as subscriptions.** Tick "This is a subscription" when adding a bill (Netflix, Spotify, gym, etc.), or use the new "Sub" button on an existing one. Once you've tagged at least one, a running monthly total and a "show subscriptions only" filter appear above your Bills list.
+- **New "Savings Goals" page.** Set a target amount tied to one of your accounts — e.g. "ISA deposit target: £5,000" tied to your ISA account, with an optional target date. There's no separate pot to manage: progress is just that account's current balance against the target, so any Transfer or Standing Order that moves money into the account raises it automatically, with nothing extra to set up.
+- **New "Cash flow forecast" on the Dashboard.** Projects your total balance forward 30 days using the Bills you've already added, shows what's coming and when, and flags the lowest point you're projected to hit so a tight patch doesn't catch you off guard. It only knows about bills you've told it about — it can't predict income or day-to-day spending, so treat it as a floor, not a prediction. Can be hidden/reordered from Settings like any other Dashboard panel.
+
 *Update needs pushing to GitHub Desktop for these to reach your phone/desktop installs.*
 
 This page lists everything Budgeter can do, and every real problem that was caught and fixed while building it — written so it makes sense whether you're technical or not. If you ever want the more technical version (file structure, how the code is organised), that lives in `PROJECT_NOTES.md` in the same folder — this page is the friendly one.
@@ -35,6 +42,7 @@ Budgeter is a personal money-tracking app, built just for you. It works offline,
 - Set up a recurring bill once (rent, subscriptions, utilities) with an amount and due date.
 - Each month it automatically shows as due, overdue, or paid — no need to re-enter it.
 - Pays itself automatically once the due date arrives; tapped/paid by mistake? Hit Undo.
+- Tag any bill as a subscription to see a running monthly subscription total and filter to just those.
 
 ### Standing Orders
 - Same idea as Bills, but for recurring transfers between two of your own accounts (e.g. £200 into savings on the 1st of every month) instead of an expense.
@@ -43,11 +51,16 @@ Budgeter is a personal money-tracking app, built just for you. It works offline,
 ### Budgets
 - Set a monthly spending limit for any category (e.g. £200 for Groceries).
 - A progress bar fills up as you spend, turning red if you go over.
+- Optional rollover: unused amount raises next month's limit, overspending lowers it.
+
+### Savings Goals
+- Set a target amount (and optional target date) tied to one of your accounts, e.g. an ISA deposit target.
+- Progress is just that account's balance vs. the target — Transfers and Standing Orders into it count automatically.
 
 ### Reports
 - **Trends** — income vs expenses over the last 6 months, as a chart and a simple list.
 - **Net Worth** — what you own minus what you owe, tracked over time, with credit card balances automatically counted as debts.
-- **Dashboard** — your home screen: total balance (with a mini trend line), this month's income/expenses, upcoming bills, spending by category, and recent activity.
+- **Dashboard** — your home screen: total balance (with a mini trend line), this month's income/expenses, upcoming bills, a 30-day cash flow forecast, spending by category, and recent activity.
 
 ### Keeping your devices in sync
 - Turn on Sync and set a passphrase — your data is scrambled on your device *before* it's ever sent anywhere. Enter the same passphrase on your other device to unlock it there.
