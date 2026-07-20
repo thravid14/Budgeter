@@ -422,12 +422,72 @@ async function renderTrends() {
 
 /* ---------------- Net worth page ---------------- */
 
+// Renders a donut chart as an SVG string from [{ value, color }, ...].
+// Each slice is a full-circle <circle> stroked with a dash covering only
+// its share of the circumference — a standard no-library way to draw a
+// pie/donut chart, consistent with renderSparkline() above using raw SVG
+// rather than pulling in a charting dependency.
+function renderDonutChart(slices, size, strokeWidth) {
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+  if (total <= 0) return '';
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const center = size / 2;
+  let offset = 0;
+  const circles = slices.map(s => {
+    const dash = (s.value / total) * circumference;
+    const circle = `<circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${center} ${center})"></circle>`;
+    offset += dash;
+    return circle;
+  }).join('');
+  return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${circles}</svg>`;
+}
+
+// Assets-by-account pie + a simple liabilities list underneath (credit
+// card debts aren't shown as pie slices — mixing positive and negative
+// amounts in one pie wouldn't mean anything).
+function renderNetWorthPie({ assets, liabilities }) {
+  const pieEl = document.getElementById('networth-pie-chart');
+  const legendEl = document.getElementById('networth-pie-legend');
+  const liabEl = document.getElementById('networth-liabilities-list');
+
+  if (assets.length === 0) {
+    pieEl.innerHTML = '';
+    legendEl.innerHTML = `<p class="empty-note">${t('networth.pieEmpty')}</p>`;
+  } else {
+    const total = assets.reduce((sum, a) => sum + a.balance, 0);
+    const slices = assets.map((a, i) => ({ name: a.name, value: a.balance, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }));
+    pieEl.innerHTML = renderDonutChart(slices, 140, 26);
+    legendEl.innerHTML = slices.map(s => `
+      <div class="networth-pie-legend-row">
+        <span class="tag-dot" style="background:${s.color}"></span>
+        <span>${escapeHtml(s.name)}</span>
+        <span class="ledger-meta">${formatMoney(s.value)} · ${Math.round((s.value / total) * 100)}%</span>
+      </div>
+    `).join('');
+  }
+
+  if (liabilities.length === 0) {
+    liabEl.innerHTML = '';
+  } else {
+    liabEl.innerHTML = `<p class="ledger-meta networth-liabilities-label">${t('networth.liabilitiesListLabel')}</p>` +
+      liabilities.map(l => `
+        <div class="networth-pie-legend-row">
+          <span>${escapeHtml(l.name)}</span>
+          <span class="ledger-amount expense">${formatMoney(l.balance)}</span>
+        </div>
+      `).join('');
+  }
+}
+
 async function renderNetWorth() {
   const today = new Date().toISOString().slice(0, 10);
-  const [current, history] = await Promise.all([
+  const [current, history, breakdown] = await Promise.all([
     getNetWorthAsOf(today),
-    getNetWorthTrend(6)
+    getNetWorthTrend(6),
+    getAccountBalanceBreakdown()
   ]);
+  renderNetWorthPie(breakdown);
 
   document.getElementById('nw-assets').textContent = formatMoney(current.assets);
   document.getElementById('nw-liabilities').textContent = formatMoney(current.liabilities);

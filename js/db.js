@@ -623,6 +623,22 @@ async function getCashFlowForecast(days) {
   return { startBalance: balance, days, events: series, lowest, endBalance: running };
 }
 
+// Per-account current balances, split the same way as getNetWorthAsOf
+// (credit cards are liabilities, everything else is an asset). Asset
+// accounts with a balance of £0 or below are left out — a pie slice can't
+// represent zero or negative — but still count in the Net Worth totals
+// above via getNetWorthAsOf, this is just for the by-account breakdown.
+async function getAccountBalanceBreakdown() {
+  const accounts = await getAccounts();
+  const rows = await Promise.all(accounts.map(async acc => ({
+    ...acc,
+    balance: await getAccountBalance(acc.id)
+  })));
+  const assets = rows.filter(a => a.type !== 'credit' && a.type !== 'card' && a.balance > 0);
+  const liabilities = rows.filter(a => a.type === 'credit' || a.type === 'card');
+  return { assets, liabilities };
+}
+
 // Splits accounts into assets (everything except credit cards) and
 // liabilities (credit card accounts, normally negative), as of a given date.
 async function getNetWorthAsOf(asOfDateStr) {

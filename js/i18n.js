@@ -97,7 +97,9 @@ const translations = {
       assets: 'Assets', liabilities: 'Liabilities', netWorth: 'Net worth',
       overTime: 'Net worth over time', last6Months: 'last 6 months', byMonth: 'By month',
       empty: 'Add an account to start tracking net worth.',
-      flatDataNote: "Showing the same figure across every month usually just means there isn't much dated transaction history yet — this fills in and starts showing real month-to-month change as you keep using Budgeter."
+      flatDataNote: "Showing the same figure across every month usually just means there isn't much dated transaction history yet — this fills in and starts showing real month-to-month change as you keep using Budgeter.",
+      byAccount: 'By account', pieEmpty: 'No accounts with a positive balance yet.',
+      liabilitiesListLabel: 'Debts (not shown in the chart above)'
     },
     categories: {
       title: 'Categories', addCategory: '+ Add category', addStarter: '+ Add starter categories',
@@ -135,7 +137,7 @@ const translations = {
       trendsHeading: 'Trends',
       trendsBody: 'Income vs expenses over the last 6 months, as a chart and a month-by-month list, so you can spot patterns beyond just the current month.',
       networthHeading: 'Net worth',
-      networthBody: "What you own minus what you owe: account balances added up as assets, credit card balances counted as liabilities, plus how that's changed over the last 6 months.",
+      networthBody: "What you own minus what you owe: account balances added up as assets, credit card balances counted as liabilities, a pie chart showing how your assets are split across accounts, plus how that's changed over the last 6 months.",
       categoriesHeading: 'Categories',
       categoriesBody: 'Tags for your transactions (e.g. Groceries, Salary), each marked as income or expense with a colour used throughout the charts.',
       accountsHeading: 'Accounts',
@@ -262,7 +264,9 @@ const translations = {
       assets: 'Activos', liabilities: 'Pasivos', netWorth: 'Patrimonio neto',
       overTime: 'Patrimonio neto en el tiempo', last6Months: 'últimos 6 meses', byMonth: 'Por mes',
       empty: 'Añade una cuenta para empezar a seguir tu patrimonio neto.',
-      flatDataNote: 'Mostrar la misma cifra en todos los meses normalmente solo significa que aún no hay mucho historial de transacciones con fecha — esto se irá completando y mostrará cambios reales mes a mes a medida que sigas usando Budgeter.'
+      flatDataNote: 'Mostrar la misma cifra en todos los meses normalmente solo significa que aún no hay mucho historial de transacciones con fecha — esto se irá completando y mostrará cambios reales mes a mes a medida que sigas usando Budgeter.',
+      byAccount: 'Por cuenta', pieEmpty: 'Aún no hay cuentas con saldo positivo.',
+      liabilitiesListLabel: 'Deudas (no se muestran en el gráfico anterior)'
     },
     categories: {
       title: 'Categorías', addCategory: '+ Añadir categoría', addStarter: '+ Añadir categorías iniciales',
@@ -300,7 +304,7 @@ const translations = {
       trendsHeading: 'Tendencias',
       trendsBody: 'Ingresos frente a gastos durante los últimos 6 meses, como gráfico y como lista mes a mes, para detectar patrones más allá del mes actual.',
       networthHeading: 'Patrimonio neto',
-      networthBody: 'Lo que tienes menos lo que debes: los saldos de tus cuentas sumados como activos, los saldos de tarjetas de crédito contados como pasivos, y cómo ha cambiado eso en los últimos 6 meses.',
+      networthBody: 'Lo que tienes menos lo que debes: los saldos de tus cuentas sumados como activos, los saldos de tarjetas de crédito contados como pasivos, un gráfico circular que muestra cómo se reparten tus activos entre cuentas, y cómo ha cambiado eso en los últimos 6 meses.',
       categoriesHeading: 'Categorías',
       categoriesBody: 'Etiquetas para tus transacciones (p. ej. Compras, Nómina), cada una marcada como ingreso o gasto con un color usado en los gráficos.',
       accountsHeading: 'Cuentas',
