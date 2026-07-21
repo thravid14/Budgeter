@@ -105,9 +105,6 @@
           <button class="icon-btn" id="btn-share-transactions" aria-label="Share">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:16px;height:16px"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
           </button>
-          <button class="btn-secondary" id="btn-export-csv" data-i18n="transactions.exportCsv">Export CSV</button>
-          <button class="btn-secondary" id="btn-import-csv" data-i18n="transactions.importCsv">Import CSV</button>
-          <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" />
           <button class="btn-secondary" id="btn-add-transfer" data-i18n="transactions.addTransfer">+ Transfer</button>
           <button class="btn-primary" id="btn-add-transaction" data-i18n="transactions.addTransaction">+ Add transaction</button>
         </div>
@@ -405,6 +402,16 @@
         <h2 data-i18n="settings.coloursHeading">Theme colours</h2>
         <p class="sub" data-i18n="settings.coloursBody">Pick your own accent, income, and expense colours — used throughout the app, including charts.</p>
         <div id="settings-colors-list" class="settings-list"></div>
+      </div>
+
+      <div class="panel">
+        <h2 data-i18n="settings.dataHeading">Data</h2>
+        <p class="sub" data-i18n="settings.dataBody">Back up your transaction history to a CSV file, or import one back in.</p>
+        <div class="header-actions">
+          <button class="btn-secondary" id="btn-export-csv" data-i18n="transactions.exportCsv">Export CSV</button>
+          <button class="btn-secondary" id="btn-import-csv" data-i18n="transactions.importCsv">Import CSV</button>
+          <input type="file" id="csv-file-input" accept=".csv,text/csv" style="display:none" />
+        </div>
       </div>
 
       <div class="panel">

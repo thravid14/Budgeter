@@ -34,6 +34,7 @@ const translations = {
       resetDone: 'Layout reset to defaults.',
       coloursHeading: 'Theme colours',
       coloursBody: 'Pick your own accent, income, and expense colours — used throughout the app, including charts.',
+      dataHeading: 'Data', dataBody: 'Back up your transaction history to a CSV file, or import one back in.',
       colourAccent: 'Accent', colourIncome: 'Income', colourExpense: 'Expense'
     },
     dashboard: {
@@ -125,7 +126,7 @@ const translations = {
       dashboardHeading: 'Dashboard',
       dashboardBody: "Your at-a-glance overview: total balance across all accounts (with a small trend line showing the last 6 months), this month's income and expenses, upcoming bills, a 30-day cash flow forecast, a breakdown of spending by category, and your most recent transactions. The forecast projects your balance forward using bills you've already added — it lowers the balance on each bill's due date and flags the lowest point it expects to reach, so you can spot a tight patch coming. It can't know about income or day-to-day spending you haven't recorded, so treat it as a floor, not a prediction.",
       transactionsHeading: 'Transactions',
-      transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, filter by account, category, or month, and export or import your transaction history as a CSV file.',
+      transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, and filter by account, category, or month. CSV export/import moved to Settings → Data, to keep this page focused on your day-to-day entries.',
       billsHeading: 'Bills',
       billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date. Tick "This is a subscription" (or use the "Sub" button on an existing bill) to tag things like Netflix or Spotify — a running monthly subscription total and a filter to show just those appears above the list once you\'ve tagged at least one.',
       standingOrdersHeading: 'Standing Orders',
@@ -201,6 +202,7 @@ const translations = {
       resetDone: 'Diseño restablecido a los valores predeterminados.',
       coloursHeading: 'Colores del tema',
       coloursBody: 'Elige tus propios colores de acento, ingresos y gastos — usados en toda la app, incluidos los gráficos.',
+      dataHeading: 'Datos', dataBody: 'Haz copia de seguridad de tu historial de transacciones en un archivo CSV, o importa uno.',
       colourAccent: 'Acento', colourIncome: 'Ingresos', colourExpense: 'Gastos'
     },
     dashboard: {
@@ -292,7 +294,7 @@ const translations = {
       dashboardHeading: 'Panel',
       dashboardBody: 'Tu resumen de un vistazo: saldo total de todas las cuentas (con una pequeña línea de tendencia de los últimos 6 meses), ingresos y gastos de este mes, próximas facturas, una previsión de flujo de caja a 30 días, un desglose del gasto por categoría y tus transacciones más recientes. La previsión proyecta tu saldo hacia adelante usando las facturas que ya has añadido — lo reduce en la fecha de vencimiento de cada factura y señala el punto más bajo que espera alcanzar, para que puedas anticipar un momento ajustado. No puede saber sobre ingresos o gastos del día a día que no hayas registrado, así que trátala como un suelo, no como una predicción.',
       transactionsHeading: 'Transacciones',
-      transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, filtra por cuenta, categoría o mes, y exporta o importa tu historial de transacciones como archivo CSV.',
+      transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, y filtra por cuenta, categoría o mes. La exportación/importación CSV se trasladó a Ajustes → Datos, para mantener esta página centrada en tus movimientos del día a día.',
       billsHeading: 'Facturas',
       billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento. Marca "Es una suscripción" (o usa el botón "Sus" en una factura ya creada) para etiquetar cosas como Netflix o Spotify — un total mensual de suscripciones y un filtro para mostrar solo esas aparece encima de la lista en cuanto etiquetes al menos una.',
       standingOrdersHeading: 'Órdenes permanentes',

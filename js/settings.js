@@ -53,12 +53,19 @@ const DASHBOARD_REGISTRY = [
 const NAV_DEFAULT_ORDER = NAV_REGISTRY.filter(i => !i.pinned).map(i => i.id);
 const DASHBOARD_DEFAULT_ORDER = DASHBOARD_REGISTRY.map(p => p.id);
 
+// Newer, more niche additions start hidden for anyone who hasn't touched
+// Settings yet (or hits "Reset to defaults") — keeps the out-of-the-box
+// nav/dashboard focused on the core flow. Still fully available any time
+// via the Settings show/hide list; nothing here is removed, just opt-in.
+const NAV_DEFAULT_HIDDEN = ['standingorders', 'savingsgoals'];
+const DASHBOARD_DEFAULT_HIDDEN = ['cashFlowForecast'];
+
 function getNavSettings() {
   try {
     const saved = JSON.parse(localStorage.getItem('budgeter_nav_settings'));
     if (saved && Array.isArray(saved.order) && Array.isArray(saved.hidden)) return saved;
   } catch (e) { /* fall through to defaults */ }
-  return { order: NAV_DEFAULT_ORDER.slice(), hidden: [] };
+  return { order: NAV_DEFAULT_ORDER.slice(), hidden: NAV_DEFAULT_HIDDEN.slice() };
 }
 
 function saveNavSettings(settings) {
@@ -70,7 +77,7 @@ function getDashboardSettings() {
     const saved = JSON.parse(localStorage.getItem('budgeter_dashboard_settings'));
     if (saved && Array.isArray(saved.order) && Array.isArray(saved.hidden)) return saved;
   } catch (e) { /* fall through to defaults */ }
-  return { order: DASHBOARD_DEFAULT_ORDER.slice(), hidden: [] };
+  return { order: DASHBOARD_DEFAULT_ORDER.slice(), hidden: DASHBOARD_DEFAULT_HIDDEN.slice() };
 }
 
 function saveDashboardSettings(settings) {
