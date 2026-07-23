@@ -76,11 +76,12 @@ db.version(5).stores({
 
 /* ---------------- Accounts ---------------- */
 
-async function addAccount({ name, type, startingBalance }) {
+async function addAccount({ name, type, startingBalance, creditLimit }) {
   return db.accounts.add({
     name,
     type,
-    startingBalance: Number(startingBalance) || 0
+    startingBalance: Number(startingBalance) || 0,
+    creditLimit: creditLimit ? Number(creditLimit) : null
   });
 }
 
@@ -88,8 +89,32 @@ async function getAccounts() {
   return db.accounts.toArray();
 }
 
+async function getAccount(id) {
+  return db.accounts.get(id);
+}
+
 async function deleteAccount(id) {
   return db.accounts.delete(id);
+}
+
+// Edits an account's name/type, and — if `balance` is given — the account's
+// CURRENT balance (not startingBalance directly, since that's not what a
+// user editing "the amount" actually means). Works by shifting
+// startingBalance by exactly the difference between the entered balance and
+// the current computed one, so every existing transaction/transfer is left
+// untouched and getAccountBalance() recomputes to the new figure everywhere
+// it's used (Dashboard, Net Worth, the by-account pie chart, Savings Goals,
+// Trends, Cash Flow Forecast) with no other code needing to change.
+async function updateAccount(id, { name, type, balance, creditLimit }) {
+  const account = await getAccount(id);
+  if (!account) return;
+  const patch = { name, type, creditLimit: creditLimit ? Number(creditLimit) : null };
+  if (balance !== undefined && balance !== null && balance !== '') {
+    const currentBalance = await getAccountBalance(id);
+    const delta = Number(balance) - currentBalance;
+    patch.startingBalance = account.startingBalance + delta;
+  }
+  return db.accounts.update(id, patch);
 }
 
 /* ---------------- Categories ---------------- */

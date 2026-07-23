@@ -110,7 +110,11 @@ const translations = {
       title: 'Accounts', addAccount: '+ Add account',
       empty: 'No accounts yet. Add one (e.g. "Cash" or "Current account") to begin.',
       typeCurrent: 'Current account', typeSavings: 'Savings account',
-      typeIsa: 'ISA', typeCredit: 'Credit card', typeCash: 'Cash'
+      typeIsa: 'ISA', typeCredit: 'Credit card', typeCash: 'Cash',
+      currentBalanceLabel: 'Current balance',
+      editBalanceHint: "Changing this doesn't touch any of your existing transactions — it just adjusts the account's starting point so the balance shown everywhere (Dashboard, Net Worth, etc.) matches what you enter here.",
+      creditLimitLabel: 'Credit limit (optional)',
+      availableOfLimit: '{available} available of {limit} limit'
     },
     sync: {
       title: 'Sync', sub: 'Keep your phone and desktop in step — encrypted so only you can read it.',
@@ -142,7 +146,7 @@ const translations = {
       categoriesHeading: 'Categories',
       categoriesBody: 'Tags for your transactions (e.g. Groceries, Salary), each marked as income or expense with a colour used throughout the charts.',
       accountsHeading: 'Accounts',
-      accountsBody: 'Your current accounts, savings accounts, credit cards, and cash — each with a starting balance. Budgeter works out the running balance from that starting point plus every transaction and transfer since.',
+      accountsBody: "Your current accounts, savings accounts, credit cards, and cash — each with a starting balance (which can be negative, e.g. for a credit card you're carrying a balance on). Budgeter works out the running balance from that starting point plus every transaction and transfer since. Use the ✎ button to rename an account, change its type, or correct its balance if it's drifted from your real bank balance — editing the balance doesn't touch any existing transactions, it just quietly adjusts the starting point so every screen (Dashboard, Net Worth, etc.) matches straight away. Credit cards can also have a credit limit set, which shows a used/available bar on the account card.",
       syncHeading: 'Sync',
       syncBody: "Keep your phone and desktop in step. Your data is encrypted on your device before it's ever sent anywhere — set a passphrase once, enter the same one on your other device, and they'll share the same (encrypted) data.",
       fieldGuideHeading: 'Field guide',
@@ -159,7 +163,7 @@ const translations = {
     },
     toast: {
       transactionAdded: 'Transaction added.', transferAdded: 'Transfer added.',
-      categoryAdded: 'Category added.', accountAdded: 'Account added.',
+      categoryAdded: 'Category added.', accountAdded: 'Account added.', accountUpdated: 'Account updated.',
       billAdded: 'Bill added.', budgetAdded: 'Budget added.',
       transactionDeleted: 'Transaction deleted.', categoryDeleted: 'Category deleted.',
       accountDeleted: 'Account deleted.', billDeleted: 'Bill deleted.',
@@ -183,7 +187,8 @@ const translations = {
     modalTitle: {
       addTransaction: 'Add transaction', addTransfer: 'Transfer between accounts',
       addCategory: 'Add category', addAccount: 'Add account', addBill: 'Add bill',
-      addBudget: 'Add budget', addStandingOrder: 'Add standing order', addSavingsGoal: 'Add savings goal'
+      addBudget: 'Add budget', addStandingOrder: 'Add standing order', addSavingsGoal: 'Add savings goal',
+      editAccount: 'Edit account'
     }
   },
   es: {
@@ -278,7 +283,11 @@ const translations = {
       title: 'Cuentas', addAccount: '+ Añadir cuenta',
       empty: 'Aún no hay cuentas. Añade una (p. ej. "Efectivo" o "Cuenta corriente") para empezar.',
       typeCurrent: 'Cuenta corriente', typeSavings: 'Cuenta de ahorros',
-      typeIsa: 'ISA', typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo'
+      typeIsa: 'ISA', typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo',
+      currentBalanceLabel: 'Saldo actual',
+      editBalanceHint: 'Cambiar esto no afecta a ninguna de tus transacciones existentes — solo ajusta el punto de partida de la cuenta para que el saldo mostrado en todas partes (Panel, Patrimonio neto, etc.) coincida con lo que introduces aquí.',
+      creditLimitLabel: 'Límite de crédito (opcional)',
+      availableOfLimit: '{available} disponible de {limit} de límite'
     },
     sync: {
       title: 'Sincronización', sub: 'Mantén tu móvil y tu ordenador sincronizados — cifrado para que solo tú puedas leerlo.',
@@ -310,7 +319,7 @@ const translations = {
       categoriesHeading: 'Categorías',
       categoriesBody: 'Etiquetas para tus transacciones (p. ej. Compras, Nómina), cada una marcada como ingreso o gasto con un color usado en los gráficos.',
       accountsHeading: 'Cuentas',
-      accountsBody: 'Tus cuentas corrientes, cuentas de ahorro, tarjetas de crédito y efectivo — cada una con un saldo inicial. Budgeter calcula el saldo actual a partir de ese punto de partida más cada transacción y transferencia desde entonces.',
+      accountsBody: 'Tus cuentas corrientes, cuentas de ahorro, tarjetas de crédito y efectivo — cada una con un saldo inicial (que puede ser negativo, por ejemplo para una tarjeta de crédito con saldo pendiente). Budgeter calcula el saldo actual a partir de ese punto de partida más cada transacción y transferencia desde entonces. Usa el botón ✎ para cambiar el nombre de una cuenta, su tipo, o corregir su saldo si se ha desviado de tu saldo bancario real — editar el saldo no afecta a ninguna transacción existente, simplemente ajusta el punto de partida para que todas las pantallas (Panel, Patrimonio neto, etc.) coincidan al instante. Las tarjetas de crédito también pueden tener un límite de crédito, que muestra una barra de usado/disponible en la tarjeta de la cuenta.',
       syncHeading: 'Sincronización',
       syncBody: 'Mantén tu móvil y tu ordenador sincronizados. Tus datos se cifran en tu dispositivo antes de enviarse a ningún sitio — establece una contraseña una vez, introduce la misma en tu otro dispositivo, y compartirán los mismos datos (cifrados).',
       fieldGuideHeading: 'Guía de campos',
@@ -327,7 +336,7 @@ const translations = {
     },
     toast: {
       transactionAdded: 'Transacción añadida.', transferAdded: 'Transferencia añadida.',
-      categoryAdded: 'Categoría añadida.', accountAdded: 'Cuenta añadida.',
+      categoryAdded: 'Categoría añadida.', accountAdded: 'Cuenta añadida.', accountUpdated: 'Cuenta actualizada.',
       billAdded: 'Factura añadida.', budgetAdded: 'Presupuesto añadido.',
       transactionDeleted: 'Transacción eliminada.', categoryDeleted: 'Categoría eliminada.',
       accountDeleted: 'Cuenta eliminada.', billDeleted: 'Factura eliminada.',
@@ -351,7 +360,8 @@ const translations = {
     modalTitle: {
       addTransaction: 'Añadir transacción', addTransfer: 'Transferir entre cuentas',
       addCategory: 'Añadir categoría', addAccount: 'Añadir cuenta', addBill: 'Añadir factura',
-      addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente', addSavingsGoal: 'Añadir meta de ahorro'
+      addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente', addSavingsGoal: 'Añadir meta de ahorro',
+      editAccount: 'Editar cuenta'
     }
   }
 };

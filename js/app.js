@@ -541,11 +541,21 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
       <label>Starting balance</label>
       <input type="number" step="0.01" id="acc-balance" placeholder="0.00" />
     </div>
+    <div class="form-field" id="acc-credit-limit-field" style="display:none">
+      <label>${t('accounts.creditLimitLabel')}</label>
+      <input type="number" step="0.01" min="0" id="acc-credit-limit" placeholder="0.00" />
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" id="acc-cancel">Cancel</button>
       <button class="btn-primary" id="acc-save">Save</button>
     </div>
   `);
+
+  const typeSelect = document.getElementById('acc-type');
+  const limitField = document.getElementById('acc-credit-limit-field');
+  const toggleLimitField = () => { limitField.style.display = typeSelect.value === 'credit' ? '' : 'none'; };
+  typeSelect.addEventListener('change', toggleLimitField);
+  toggleLimitField();
 
   document.getElementById('acc-cancel').addEventListener('click', closeModal);
   document.getElementById('acc-save').addEventListener('click', async () => {
@@ -553,8 +563,9 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
     if (!name) { alert('Enter an account name.'); return; }
     await addAccount({
       name,
-      type: document.getElementById('acc-type').value,
-      startingBalance: document.getElementById('acc-balance').value || 0
+      type: typeSelect.value,
+      startingBalance: document.getElementById('acc-balance').value || 0,
+      creditLimit: document.getElementById('acc-credit-limit').value
     });
     closeModal();
     refreshCurrentView();
@@ -817,6 +828,61 @@ document.addEventListener('click', async (e) => {
   }
   if (btn.dataset.action === 'delete-category') {
     if (confirm('Delete this category? Existing transactions will keep it as text only.')) { await deleteCategory(id); refreshCurrentView(); showToast(t('toast.categoryDeleted')); }
+  }
+  if (btn.dataset.action === 'edit-account') {
+    const account = await getAccount(id);
+    const balance = await getAccountBalance(id);
+    openModal(t('modalTitle.editAccount'), `
+      <div class="form-field">
+        <label>Name</label>
+        <input type="text" id="acc-edit-name" value="${escapeHtml(account.name)}" />
+      </div>
+      <div class="form-field">
+        <label>Type</label>
+        <select id="acc-edit-type">
+          <option value="current">Current account</option>
+          <option value="savings">Savings account</option>
+          <option value="isa">ISA</option>
+          <option value="credit">Credit card</option>
+          <option value="cash">Cash</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>${t('accounts.currentBalanceLabel')}</label>
+        <input type="number" step="0.01" id="acc-edit-balance" value="${balance.toFixed(2)}" />
+        <p class="ledger-meta">${t('accounts.editBalanceHint')}</p>
+      </div>
+      <div class="form-field" id="acc-edit-credit-limit-field" style="display:none">
+        <label>${t('accounts.creditLimitLabel')}</label>
+        <input type="number" step="0.01" min="0" id="acc-edit-credit-limit" value="${account.creditLimit || ''}" placeholder="0.00" />
+      </div>
+      <div class="form-actions">
+        <button class="btn-secondary" id="acc-edit-cancel">Cancel</button>
+        <button class="btn-primary" id="acc-edit-save">Save</button>
+      </div>
+    `);
+    document.getElementById('acc-edit-type').value = account.type;
+
+    const editTypeSelect = document.getElementById('acc-edit-type');
+    const editLimitField = document.getElementById('acc-edit-credit-limit-field');
+    const toggleEditLimitField = () => { editLimitField.style.display = editTypeSelect.value === 'credit' ? '' : 'none'; };
+    editTypeSelect.addEventListener('change', toggleEditLimitField);
+    toggleEditLimitField();
+
+    document.getElementById('acc-edit-cancel').addEventListener('click', closeModal);
+    document.getElementById('acc-edit-save').addEventListener('click', async () => {
+      const name = document.getElementById('acc-edit-name').value.trim();
+      if (!name) { alert('Enter an account name.'); return; }
+      await updateAccount(id, {
+        name,
+        type: editTypeSelect.value,
+        balance: document.getElementById('acc-edit-balance').value,
+        creditLimit: document.getElementById('acc-edit-credit-limit').value
+      });
+      closeModal();
+      refreshCurrentView();
+      showToast(t('toast.accountUpdated'));
+    });
   }
   if (btn.dataset.action === 'delete-account') {
     if (confirm('Delete this account?')) { await deleteAccount(id); refreshCurrentView(); showToast(t('toast.accountDeleted')); }

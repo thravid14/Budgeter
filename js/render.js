@@ -590,13 +590,25 @@ async function renderAccounts() {
   }
   const cards = await Promise.all(accounts.map(async a => {
     const balance = await getAccountBalance(a.id);
+    const hasLimit = a.type === 'credit' && a.creditLimit > 0;
+    const used = hasLimit ? Math.max(0, -balance) : 0;
+    const available = hasLimit ? Math.max(0, a.creditLimit - used) : 0;
+    const percent = hasLimit ? Math.min(100, (used / a.creditLimit) * 100) : 0;
+
     return `
       <div class="account-card">
         ${accountTypeIcon(a.type)}
         <div class="acc-name">${escapeHtml(a.name)}</div>
         <div class="acc-type">${accountTypeLabel(a.type)}</div>
         <div class="acc-balance">${formatMoney(balance)}</div>
+        ${hasLimit ? `
+          <div class="breakdown-bar-track acc-credit-bar">
+            <div class="breakdown-bar-fill ${percent >= 90 ? 'over' : ''}" style="width:${percent}%; background:${percent >= 90 ? 'var(--expense)' : 'var(--gold)'}"></div>
+          </div>
+          <div class="ledger-meta">${t('accounts.availableOfLimit', { available: formatMoney(available), limit: formatMoney(a.creditLimit) })}</div>
+        ` : ''}
         <div class="form-actions">
+          <button class="icon-btn" data-action="edit-account" data-id="${a.id}" aria-label="Edit">✎</button>
           <button class="icon-btn danger" data-action="delete-account" data-id="${a.id}" aria-label="Delete">✕</button>
         </div>
       </div>
