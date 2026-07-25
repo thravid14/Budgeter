@@ -74,6 +74,25 @@ db.version(5).stores({
   savingsGoals: '++id, accountId'
 });
 
+// v6: Savings Goals can now total balances across MULTIPLE accounts
+// (accountIds, an array) instead of just one (accountId) — e.g. an "ISA +
+// Premium Bonds" house deposit goal. No index needed on accountIds since
+// nothing looks goals up by account, so the old accountId index is just
+// dropped rather than replaced. Old goals (still holding a single
+// accountId from before this version) keep working — getSavingsGoalsWithProgress
+// treats a missing accountIds as [accountId] rather than requiring a
+// one-off data migration.
+db.version(6).stores({
+  accounts: '++id, name',
+  categories: '++id, name, kind',
+  transactions: '++id, date, kind, accountId, categoryId, billId',
+  bills: '++id, name, categoryId, accountId',
+  transfers: '++id, date, fromAccountId, toAccountId, standingOrderId',
+  budgets: '++id, categoryId',
+  standingOrders: '++id, name, fromAccountId, toAccountId',
+  savingsGoals: '++id'
+});
+
 /* ---------------- Accounts ---------------- */
 
 async function addAccount({ name, type, startingBalance, creditLimit, repaymentDueDay }) {
@@ -492,16 +511,17 @@ async function getBudgetsWithProgress(monthStr) {
 }
 
 /* ---------------- Savings Goals ----------------
-   A target amount tied to one of the user's own accounts. Progress is just
-   that account's current balance vs. the target — see the v5 schema comment
-   above for why there's no separate contribution ledger.
+   A target amount tied to one or more of the user's own accounts (e.g. an
+   "ISA + Premium Bonds" house deposit goal). Progress is just those
+   accounts' combined current balance vs. the target — see the v5 schema
+   comment above for why there's no separate contribution ledger.
 */
 
-async function addSavingsGoal({ name, targetAmount, accountId, targetDate }) {
+async function addSavingsGoal({ name, targetAmount, accountIds, targetDate }) {
   return db.savingsGoals.add({
     name,
     targetAmount: Number(targetAmount) || 0,
-    accountId: Number(accountId),
+    accountIds: (accountIds || []).map(Number),
     targetDate: targetDate || null
   });
 }
@@ -514,18 +534,23 @@ async function deleteSavingsGoal(id) {
   return db.savingsGoals.delete(id);
 }
 
-// Returns goals with computed current balance/remaining/percent/achieved.
+// Returns goals with computed current balance/remaining/percent/achieved,
+// combining the balances of every linked account. Goals saved before
+// multi-account support (a single accountId, no accountIds) still work —
+// treated as a one-account list.
 async function getSavingsGoalsWithProgress() {
   const [goals, accounts] = await Promise.all([getSavingsGoals(), getAccounts()]);
 
   return Promise.all(goals.map(async goal => {
-    const account = accounts.find(a => a.id === goal.accountId);
-    const current = account ? await getAccountBalance(goal.accountId) : 0;
+    const accountIds = (goal.accountIds && goal.accountIds.length) ? goal.accountIds : (goal.accountId ? [goal.accountId] : []);
+    const goalAccounts = accountIds.map(id => accounts.find(a => a.id === id)).filter(Boolean);
+    const balances = await Promise.all(goalAccounts.map(a => getAccountBalance(a.id)));
+    const current = balances.reduce((sum, b) => sum + b, 0);
     const remaining = Math.max(0, goal.targetAmount - current);
     const percent = goal.targetAmount > 0 ? Math.min(100, (current / goal.targetAmount) * 100) : 0;
     const achieved = current >= goal.targetAmount;
 
-    return { ...goal, account, current, remaining, percent, achieved };
+    return { ...goal, accounts: goalAccounts, current, remaining, percent, achieved };
   }));
 }
 

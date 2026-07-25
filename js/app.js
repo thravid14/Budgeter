@@ -29,13 +29,39 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
   if (!container) return;
   const HOLD_MS = 250;
   const MOVE_CANCEL_PX = 8;
+  // How close to the top/bottom of the screen (in px) before the page starts
+  // auto-scrolling, and how fast it scrolls right at the very edge. Bottom
+  // zone is bigger to comfortably clear the fixed bottom nav bar on mobile.
+  const EDGE_ZONE_TOP = 70;
+  const EDGE_ZONE_BOTTOM = 110;
+  const MAX_SCROLL_SPEED = 16;
+
   let pressTimer = null;
   let dragEl = null;
   let placeholder = null;
   let startX = 0, startY = 0;
   let grabOffsetX = 0, grabOffsetY = 0;
+  let lastClientX = 0, lastClientY = 0;
+  let autoScrollRAF = null;
 
   const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+
+  function autoScrollStep() {
+    if (!dragEl) { autoScrollRAF = null; return; }
+    let dy = 0;
+    if (lastClientY < EDGE_ZONE_TOP) {
+      dy = -MAX_SCROLL_SPEED * (1 - lastClientY / EDGE_ZONE_TOP);
+    } else if (lastClientY > window.innerHeight - EDGE_ZONE_BOTTOM) {
+      dy = MAX_SCROLL_SPEED * (1 - (window.innerHeight - lastClientY) / EDGE_ZONE_BOTTOM);
+    }
+    if (dy) {
+      window.scrollBy(0, dy);
+      // The pointer hasn't moved, but the page has — the item under it and
+      // everyone's on-screen position changed, so re-evaluate the drop spot.
+      movePlaceholder(lastClientX, lastClientY);
+    }
+    autoScrollRAF = requestAnimationFrame(autoScrollStep);
+  }
 
   function captureRects() {
     const map = new Map();
@@ -88,6 +114,7 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
 
   const endDrag = () => {
     cancelPress();
+    if (autoScrollRAF) { cancelAnimationFrame(autoScrollRAF); autoScrollRAF = null; }
     if (!dragEl) return;
     document.body.classList.remove('dragging-active');
 
@@ -136,6 +163,8 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
       dragEl.style.zIndex = '999';
       dragEl.style.pointerEvents = 'none';
       document.body.classList.add('dragging-active');
+      lastClientX = startX; lastClientY = startY;
+      autoScrollRAF = requestAnimationFrame(autoScrollStep);
 
       try { handle.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
     }, HOLD_MS);
@@ -144,6 +173,7 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
   container.addEventListener('pointermove', (e) => {
     if (dragEl) {
       e.preventDefault();
+      lastClientX = e.clientX; lastClientY = e.clientY;
       dragEl.style.left = (e.clientX - grabOffsetX) + 'px';
       dragEl.style.top = (e.clientY - grabOffsetY) + 'px';
       movePlaceholder(e.clientX, e.clientY);
@@ -970,8 +1000,15 @@ document.getElementById('btn-add-savingsgoal').addEventListener('click', async (
       </div>
     </div>
     <div class="form-field">
-      <label>Account</label>
-      <select id="goal-account">${accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('')}</select>
+      <label>Accounts (money in any of these counts toward the goal)</label>
+      <div class="settings-list">
+        ${accounts.map((a, i) => `
+          <label class="settings-check" style="padding:6px 0">
+            <input type="checkbox" class="goal-account-check" value="${a.id}" ${i === 0 ? 'checked' : ''} />
+            ${escapeHtml(a.name)}
+          </label>
+        `).join('')}
+      </div>
     </div>
     <div class="form-actions">
       <button class="btn-secondary" id="goal-cancel">Cancel</button>
@@ -983,13 +1020,15 @@ document.getElementById('btn-add-savingsgoal').addEventListener('click', async (
   document.getElementById('goal-save').addEventListener('click', async () => {
     const name = document.getElementById('goal-name').value.trim();
     const targetAmount = document.getElementById('goal-amount').value;
+    const accountIds = Array.from(document.querySelectorAll('.goal-account-check:checked')).map(cb => cb.value);
     if (!name) { alert('Enter a goal name.'); return; }
     if (!targetAmount || Number(targetAmount) <= 0) { alert('Enter a target amount greater than 0.'); return; }
+    if (accountIds.length === 0) { alert('Choose at least one account.'); return; }
 
     await addSavingsGoal({
       name,
       targetAmount,
-      accountId: document.getElementById('goal-account').value,
+      accountIds,
       targetDate: document.getElementById('goal-date').value
     });
     closeModal();

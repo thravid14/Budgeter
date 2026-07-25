@@ -415,7 +415,7 @@ async function renderSavingsGoals() {
       <div class="breakdown-bar-track">
         <div class="breakdown-bar-fill ${g.achieved ? 'achieved' : ''}" style="width:${g.percent}%; background:${g.achieved ? 'var(--income)' : 'var(--gold)'}"></div>
       </div>
-      <p class="ledger-meta">${g.account ? escapeHtml(g.account.name) : '—'}${g.targetDate ? ' · ' + t('savingsGoals.byDate', { date: formatUKDate(g.targetDate) }) : ''}</p>
+      <p class="ledger-meta">${g.accounts.length ? escapeHtml(g.accounts.map(a => a.name).join(' + ')) : '—'}${g.targetDate ? ' · ' + t('savingsGoals.byDate', { date: formatUKDate(g.targetDate) }) : ''}</p>
       <div class="budget-foot">
         <span class="ledger-meta">${g.achieved ? t('savingsGoals.reached') : t('savingsGoals.remaining', { amt: formatMoney(g.remaining) })}</span>
         <button class="icon-btn danger" data-action="delete-savingsgoal" data-id="${g.id}" aria-label="Delete">✕</button>

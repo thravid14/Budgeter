@@ -4,6 +4,9 @@
 
 ## Post-launch fixes (found during real usage)
 
+- **Drag reorder now auto-scrolls.** Dragging a tile near the top or bottom of the screen now scrolls the page automatically, so you can move a tile further than what's currently visible — this was the main thing making it hard to use reliably.
+- **Savings Goals can now combine multiple accounts.** When adding a goal, tick as many accounts as you like (e.g. a house deposit goal combining your ISA and Premium Bonds) — progress is their combined balance against the target. Existing goals with just one account keep working exactly as before, nothing to redo.
+
 - **Transactions page buttons ran off the edge of the screen on mobile.** The header had five buttons (Share, Export CSV, Import CSV, + Transfer, + Add transaction) that didn't wrap to a new line on a narrow screen, so the last one or two got pushed off-screen. Fixed so they wrap onto multiple rows instead. (Kept the **+ Transfer** button as-is — it's for one-off, ad-hoc transfers between your own accounts, which Standing Orders don't cover since those are specifically for *recurring* ones.)
 - **New "By account" pie chart on the Net Worth page.** Shows how your assets are split across accounts (e.g. Current vs Savings vs ISA), with a legend giving the amount and percentage for each. Debts (credit cards) are listed separately underneath rather than in the chart, since mixing positive balances and debts in one pie wouldn't mean anything.
 - **Accounts can now be edited.** A new ✎ button on each account (Accounts page) lets you rename it, change its type, or correct its balance if it's drifted from your real bank balance. Editing the balance doesn't touch any of your existing transactions — it just quietly adjusts the account's starting point behind the scenes, so the new figure shows correctly everywhere at once (Dashboard, Net Worth, the by-account pie chart, Savings Goals, Cash Flow Forecast) with nothing else to update manually.
