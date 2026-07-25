@@ -30,6 +30,17 @@ html, body {
   font-family: var(--font-body);
 }
 
+/* Smooths the light/dark theme switch — CSS variables themselves can't be
+   transitioned, so this lists the properties that actually read them on the
+   main surfaces. Deliberately left off elements that already declare their
+   own transition (.dragging, .drag-handle, .breakdown-bar-fill, etc.) so
+   nothing fights over which transition wins. */
+body, #app, #nav, .brand, .nav-btn, #main, .panel, .modal, .modal-overlay,
+.summary-card, .account-card, .bill-row, .ledger-row, .budget-card,
+.settings-row, .tag-chip, .reminder-banner, input, select, textarea, button {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
 h1, h2 { font-family: var(--font-display); font-weight: 600; margin: 0; }
 h1 { font-size: 1.7rem; letter-spacing: -0.01em; }
 h2 { font-size: 1.05rem; color: var(--text); margin-bottom: 14px; }
@@ -277,7 +288,21 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   font-size: 0.95rem; line-height: 1;
 }
 .drag-handle:hover { color: var(--text); background: var(--surface-raised); }
-.dragging { opacity: 0.6; box-shadow: var(--shadow-md); position: relative; z-index: 50; cursor: grabbing; }
+.dragging {
+  box-shadow: var(--shadow-md), 0 14px 28px rgba(0,0,0,0.35);
+  transform: scale(1.03);
+  opacity: 0.97;
+  cursor: grabbing;
+  transition: box-shadow 0.15s var(--ease), transform 0.15s var(--ease);
+  pointer-events: none;
+}
+.drag-placeholder {
+  border: 2px dashed var(--gold);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  opacity: 0.5;
+}
+body.dragging-active { user-select: none; -webkit-user-select: none; }
 
 /* ===== Dashboard credit card reminder ===== */
 .reminder-banner {
@@ -295,6 +320,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .networth-pie-legend-row .ledger-meta { margin-left: auto; }
 .networth-pie-legend-row .ledger-amount { margin-left: auto; }
 .networth-liabilities-label { margin: 14px 0 8px; }
+.donut-slice { transition: stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
 
 /* ===== Budgets ===== */
 .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }

@@ -15,6 +15,15 @@ let currentView = 'dashboard';
    handles mouse (desktop) and touch (mobile) — `touch-action: none` on
    `.drag-handle` (see styles.css) stops the browser trying to scroll the
    page once a drag actually starts.
+
+   The dragged item becomes a `position: fixed` "ghost" that tracks the
+   pointer directly (no lag, no lower-frequency reflow), leaving a
+   same-sized placeholder behind to mark its slot. Other items animate
+   into their new positions with the FLIP technique (record each item's
+   position before the placeholder moves, let the browser reflow, then
+   play a transform transition from the old position to the new one) —
+   this is what makes the tiles visibly slide out of the way instead of
+   snapping.
 */
 function enableDragReorder(container, itemSelector, getKey, onReorder) {
   if (!container) return;
@@ -22,18 +31,81 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
   const MOVE_CANCEL_PX = 8;
   let pressTimer = null;
   let dragEl = null;
+  let placeholder = null;
   let startX = 0, startY = 0;
+  let grabOffsetX = 0, grabOffsetY = 0;
 
   const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; };
 
-  const endDrag = () => {
-    if (dragEl) {
-      dragEl.classList.remove('dragging');
-      const newOrder = Array.from(container.querySelectorAll(itemSelector)).map(getKey);
-      onReorder(newOrder);
+  function captureRects() {
+    const map = new Map();
+    container.querySelectorAll(itemSelector).forEach(item => map.set(item, item.getBoundingClientRect()));
+    return map;
+  }
+
+  function flipAnimate(prevRects) {
+    container.querySelectorAll(itemSelector).forEach(item => {
+      const prev = prevRects.get(item);
+      if (!prev) return;
+      const now = item.getBoundingClientRect();
+      const dx = prev.left - now.left, dy = prev.top - now.top;
+      if (!dx && !dy) return;
+      item.style.transition = 'none';
+      item.style.transform = `translate(${dx}px, ${dy}px)`;
+      requestAnimationFrame(() => {
+        item.style.transition = 'transform 0.2s ease';
+        item.style.transform = '';
+      });
+    });
+  }
+
+  function movePlaceholder(clientX, clientY) {
+    const items = Array.from(container.querySelectorAll(itemSelector)).filter(i => i !== placeholder);
+    // Grid-aware: account cards can sit side by side (multi-column grid),
+    // dashboard panels are always full-width (effectively single column).
+    // Find whichever item's center the pointer is nearest to, then decide
+    // before/after using whichever axis actually distinguishes items —
+    // horizontal if the pointer is roughly level with that item (same
+    // row), vertical otherwise.
+    let closest = null, closestDist = Infinity;
+    for (const item of items) {
+      const rect = item.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+      const dist = (clientX - cx) ** 2 + (clientY - cy) ** 2;
+      if (dist < closestDist) { closestDist = dist; closest = { item, rect, cx, cy }; }
     }
-    dragEl = null;
+    const prevRects = captureRects();
+    if (closest) {
+      const sameRow = Math.abs(clientY - closest.cy) < closest.rect.height / 2;
+      const after = sameRow ? clientX > closest.cx : clientY > closest.cy;
+      if (after) closest.item.after(placeholder);
+      else closest.item.before(placeholder);
+    } else {
+      container.appendChild(placeholder);
+    }
+    flipAnimate(prevRects);
+  }
+
+  const endDrag = () => {
     cancelPress();
+    if (!dragEl) return;
+    document.body.classList.remove('dragging-active');
+
+    dragEl.classList.remove('dragging');
+    dragEl.style.position = '';
+    dragEl.style.left = '';
+    dragEl.style.top = '';
+    dragEl.style.width = '';
+    dragEl.style.height = '';
+    dragEl.style.zIndex = '';
+    dragEl.style.pointerEvents = '';
+
+    placeholder.replaceWith(dragEl);
+    placeholder = null;
+
+    const newOrder = Array.from(container.querySelectorAll(itemSelector)).map(getKey);
+    dragEl = null;
+    onReorder(newOrder);
   };
 
   container.addEventListener('pointerdown', (e) => {
@@ -44,8 +116,27 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
     startX = e.clientX; startY = e.clientY;
     cancelPress();
     pressTimer = setTimeout(() => {
+      const rect = item.getBoundingClientRect();
+      grabOffsetX = startX - rect.left;
+      grabOffsetY = startY - rect.top;
+
+      placeholder = document.createElement('div');
+      placeholder.className = 'drag-placeholder';
+      placeholder.style.width = rect.width + 'px';
+      placeholder.style.height = rect.height + 'px';
+      item.after(placeholder);
+
       dragEl = item;
       dragEl.classList.add('dragging');
+      dragEl.style.position = 'fixed';
+      dragEl.style.left = rect.left + 'px';
+      dragEl.style.top = rect.top + 'px';
+      dragEl.style.width = rect.width + 'px';
+      dragEl.style.height = rect.height + 'px';
+      dragEl.style.zIndex = '999';
+      dragEl.style.pointerEvents = 'none';
+      document.body.classList.add('dragging-active');
+
       try { handle.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
     }, HOLD_MS);
   });
@@ -53,28 +144,9 @@ function enableDragReorder(container, itemSelector, getKey, onReorder) {
   container.addEventListener('pointermove', (e) => {
     if (dragEl) {
       e.preventDefault();
-      const items = Array.from(container.querySelectorAll(itemSelector)).filter(i => i !== dragEl);
-      // Grid-aware: account cards can sit side by side (multi-column grid),
-      // dashboard panels are always full-width (effectively single column).
-      // Find whichever item's center the pointer is nearest to, then decide
-      // before/after using whichever axis actually distinguishes items —
-      // horizontal if the pointer is roughly level with that item (same
-      // row), vertical otherwise.
-      let closest = null, closestDist = Infinity;
-      for (const item of items) {
-        const rect = item.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
-        const dist = (e.clientX - cx) ** 2 + (e.clientY - cy) ** 2;
-        if (dist < closestDist) { closestDist = dist; closest = { item, rect, cx, cy }; }
-      }
-      if (closest) {
-        const sameRow = Math.abs(e.clientY - closest.cy) < closest.rect.height / 2;
-        const after = sameRow ? e.clientX > closest.cx : e.clientY > closest.cy;
-        if (after) closest.item.after(dragEl);
-        else closest.item.before(dragEl);
-      } else {
-        container.appendChild(dragEl);
-      }
+      dragEl.style.left = (e.clientX - grabOffsetX) + 'px';
+      dragEl.style.top = (e.clientY - grabOffsetY) + 'px';
+      movePlaceholder(e.clientX, e.clientY);
       return;
     }
     if (pressTimer && (Math.abs(e.clientX - startX) > MOVE_CANCEL_PX || Math.abs(e.clientY - startY) > MOVE_CANCEL_PX)) {

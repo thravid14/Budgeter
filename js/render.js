@@ -10,6 +10,22 @@ function formatMoney(n) {
   return `${sign}£${Math.abs(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// Animates a £ figure counting from its previous value up (or down) to the
+// new one, instead of jumping straight to it. `from: null` (first-ever
+// render, nothing to count up from) skips straight to the final value.
+function animateMoneyValue(el, from, to, duration = 450) {
+  if (from === null || from === to) { el.textContent = formatMoney(to); return; }
+  const start = performance.now();
+  function step(now) {
+    const progress = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+    el.textContent = formatMoney(from + (to - from) * eased);
+    if (progress < 1) requestAnimationFrame(step);
+    else el.textContent = formatMoney(to);
+  }
+  requestAnimationFrame(step);
+}
+
 // Formats a 'YYYY-MM-DD' string as UK-style DD/MM/YY, e.g. "17/07/26".
 function formatUKDate(dateStr) {
   const [y, m, d] = dateStr.split('-');
@@ -53,6 +69,10 @@ function renderSparkline(values, width, height) {
   return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+// Previous Dashboard stat figures, so animateMoneyValue knows what to count
+// up/down from on the next render. Starts at null (no animation on first load).
+let dashboardStatCache = { balance: null, income: null, expense: null };
+
 function renderCreditCardReminders(reminders) {
   const banner = document.getElementById('credit-reminder-banner');
   if (reminders.length === 0) {
@@ -95,10 +115,11 @@ async function renderDashboard() {
 
   renderCreditCardReminders(creditReminders);
 
-  document.getElementById('stat-balance').textContent = formatMoney(balance);
+  animateMoneyValue(document.getElementById('stat-balance'), dashboardStatCache.balance, balance);
   document.getElementById('balance-sparkline').innerHTML = renderSparkline(netWorthTrend.map(t => t.netWorth));
-  document.getElementById('stat-income').textContent = formatMoney(income);
-  document.getElementById('stat-expense').textContent = formatMoney(expense);
+  animateMoneyValue(document.getElementById('stat-income'), dashboardStatCache.income, income);
+  animateMoneyValue(document.getElementById('stat-expense'), dashboardStatCache.expense, expense);
+  dashboardStatCache = { balance, income, expense };
 
   const breakdownEl = document.getElementById('category-breakdown');
   if (breakdown.length === 0) {
@@ -451,6 +472,11 @@ async function renderTrends() {
 // its share of the circumference — a standard no-library way to draw a
 // pie/donut chart, consistent with renderSparkline() above using raw SVG
 // rather than pulling in a charting dependency.
+// Slices render collapsed (stroke-dasharray "0, circumference" — invisible)
+// and store their real dash/gap as data attributes; the caller triggers the
+// actual sweep-in via animateDonutChart() once the SVG is in the DOM, so
+// the CSS transition on .donut-slice (styles.css) has a real "before" state
+// to animate from.
 function renderDonutChart(slices, size, strokeWidth) {
   const total = slices.reduce((sum, s) => sum + s.value, 0);
   if (total <= 0) return '';
@@ -460,11 +486,23 @@ function renderDonutChart(slices, size, strokeWidth) {
   let offset = 0;
   const circles = slices.map(s => {
     const dash = (s.value / total) * circumference;
-    const circle = `<circle cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="${dash} ${circumference - dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${center} ${center})"></circle>`;
+    const gap = circumference - dash;
+    const circle = `<circle class="donut-slice" data-dash="${dash}" data-gap="${gap}" cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="0 ${circumference}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${center} ${center})"></circle>`;
     offset += dash;
     return circle;
   }).join('');
   return `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${circles}</svg>`;
+}
+
+// Kicks off the sweep-in for a chart just inserted via renderDonutChart's
+// HTML. Double rAF so the browser paints the collapsed (0-length) state
+// first — otherwise the transition has nothing to animate from.
+function animateDonutChart(container) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    container.querySelectorAll('.donut-slice').forEach(circle => {
+      circle.setAttribute('stroke-dasharray', `${circle.dataset.dash} ${circle.dataset.gap}`);
+    });
+  }));
 }
 
 // Assets-by-account pie + a simple liabilities list underneath (credit
@@ -482,6 +520,7 @@ function renderNetWorthPie({ assets, liabilities }) {
     const total = assets.reduce((sum, a) => sum + a.balance, 0);
     const slices = assets.map((a, i) => ({ name: a.name, value: a.balance, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }));
     pieEl.innerHTML = renderDonutChart(slices, 140, 26);
+    animateDonutChart(pieEl);
     legendEl.innerHTML = slices.map(s => `
       <div class="networth-pie-legend-row">
         <span class="tag-dot" style="background:${s.color}"></span>
