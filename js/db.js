@@ -76,12 +76,13 @@ db.version(5).stores({
 
 /* ---------------- Accounts ---------------- */
 
-async function addAccount({ name, type, startingBalance, creditLimit }) {
+async function addAccount({ name, type, startingBalance, creditLimit, repaymentDueDay }) {
   return db.accounts.add({
     name,
     type,
     startingBalance: Number(startingBalance) || 0,
-    creditLimit: creditLimit ? Number(creditLimit) : null
+    creditLimit: creditLimit ? Number(creditLimit) : null,
+    repaymentDueDay: repaymentDueDay ? Math.min(31, Math.max(1, Number(repaymentDueDay))) : null
   });
 }
 
@@ -105,10 +106,14 @@ async function deleteAccount(id) {
 // untouched and getAccountBalance() recomputes to the new figure everywhere
 // it's used (Dashboard, Net Worth, the by-account pie chart, Savings Goals,
 // Trends, Cash Flow Forecast) with no other code needing to change.
-async function updateAccount(id, { name, type, balance, creditLimit }) {
+async function updateAccount(id, { name, type, balance, creditLimit, repaymentDueDay }) {
   const account = await getAccount(id);
   if (!account) return;
-  const patch = { name, type, creditLimit: creditLimit ? Number(creditLimit) : null };
+  const patch = {
+    name, type,
+    creditLimit: creditLimit ? Number(creditLimit) : null,
+    repaymentDueDay: repaymentDueDay ? Math.min(31, Math.max(1, Number(repaymentDueDay))) : null
+  };
   if (balance !== undefined && balance !== null && balance !== '') {
     const currentBalance = await getAccountBalance(id);
     const delta = Number(balance) - currentBalance;
@@ -662,6 +667,39 @@ async function getAccountBalanceBreakdown() {
   const assets = rows.filter(a => a.type !== 'credit' && a.type !== 'card' && a.balance > 0);
   const liabilities = rows.filter(a => a.type === 'credit' || a.type === 'card');
   return { assets, liabilities };
+}
+
+// Pure calendar reminder for credit card repayment dates — deliberately
+// NOT paid/unpaid tracking like Bills/Standing Orders, since a repayment
+// amount usually varies with the statement balance rather than being a
+// fixed recurring figure, so there's no reliable amount to auto-pay or a
+// specific transaction to match against. Just a heads-up so it isn't
+// forgotten, capped to `daysAhead` days out (overdue by more than 3 days
+// rolls forward to next month's date rather than nagging indefinitely).
+async function getCreditCardReminders(daysAhead) {
+  const accounts = await getAccounts();
+  const cards = accounts.filter(a => (a.type === 'credit' || a.type === 'card') && a.repaymentDueDay);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return cards.map(card => {
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    let day = Math.min(card.repaymentDueDay, daysInMonth);
+    let dueDate = new Date(today.getFullYear(), today.getMonth(), day);
+    let daysUntilDue = Math.round((dueDate - today) / 86400000);
+
+    if (daysUntilDue < -3) {
+      const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const daysInNextMonth = new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate();
+      day = Math.min(card.repaymentDueDay, daysInNextMonth);
+      dueDate = new Date(nextMonth.getFullYear(), nextMonth.getMonth(), day);
+      daysUntilDue = Math.round((dueDate - today) / 86400000);
+    }
+
+    const dueDateStr = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}`;
+    return { accountId: card.id, name: card.name, dueDateStr, daysUntilDue };
+  }).filter(r => r.daysUntilDue <= daysAhead).sort((a, b) => a.daysUntilDue - b.daysUntilDue);
 }
 
 // Splits accounts into assets (everything except credit cards) and

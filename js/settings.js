@@ -43,6 +43,7 @@ const NAV_REGISTRY = [
 ];
 
 const DASHBOARD_REGISTRY = [
+  { id: 'creditCardReminders', labelKey: 'dashboard.creditCardReminders' },
   { id: 'summary', labelKey: 'settings.panelSummary' },
   { id: 'upcomingBills', labelKey: 'dashboard.upcomingBills' },
   { id: 'cashFlowForecast', labelKey: 'dashboard.cashFlowForecast' },
@@ -84,9 +85,24 @@ function saveDashboardSettings(settings) {
   localStorage.setItem('budgeter_dashboard_settings', JSON.stringify(settings));
 }
 
+// Accounts page order — press-and-hold drag reorder (app.js) writes here.
+// Just an ID order, no hidden concept (there's nothing to hide on this page).
+function getAccountOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('budgeter_account_order'));
+    if (Array.isArray(saved)) return saved;
+  } catch (e) { /* fall through to default */ }
+  return [];
+}
+
+function saveAccountOrder(order) {
+  localStorage.setItem('budgeter_account_order', JSON.stringify(order));
+}
+
 function resetLayoutSettings() {
   localStorage.removeItem('budgeter_nav_settings');
   localStorage.removeItem('budgeter_dashboard_settings');
+  localStorage.removeItem('budgeter_account_order');
   localStorage.removeItem('budgeter_custom_colors');
 }
 
@@ -162,6 +178,12 @@ function applyDashboardLayout() {
   orderedIds.forEach(id => {
     const el = byId[id];
     el.style.display = hidden.includes(id) ? 'none' : '';
+    if (!el.querySelector(':scope > .drag-row')) {
+      const row = document.createElement('div');
+      row.className = 'drag-row';
+      row.innerHTML = `<span class="drag-handle" aria-label="${t('accounts.reorderHandle')}">⠿</span>`;
+      el.prepend(row);
+    }
     container.appendChild(el);
   });
 }

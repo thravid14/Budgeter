@@ -268,6 +268,26 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   text-transform: uppercase; letter-spacing: 0.03em;
 }
 
+/* ===== Press-and-hold drag reorder ===== */
+.drag-row { display: flex; justify-content: flex-end; margin-bottom: -6px; }
+.drag-handle {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 26px; border-radius: 6px;
+  color: var(--text-dim); cursor: grab; touch-action: none; user-select: none;
+  font-size: 0.95rem; line-height: 1;
+}
+.drag-handle:hover { color: var(--text); background: var(--surface-raised); }
+.dragging { opacity: 0.6; box-shadow: var(--shadow-md); position: relative; z-index: 50; cursor: grabbing; }
+
+/* ===== Dashboard credit card reminder ===== */
+.reminder-banner {
+  background: var(--surface-raised); border: 1px solid var(--gold);
+  border-radius: var(--radius); padding: 12px 16px; margin-bottom: 20px;
+}
+.reminder-banner.urgent { border-color: var(--expense); }
+.reminder-banner .reminder-line { margin: 0; font-size: 0.88rem; color: var(--text); }
+.reminder-banner .reminder-line + .reminder-line { margin-top: 4px; }
+
 /* ===== Net worth by-account pie ===== */
 .networth-pie-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
 .networth-pie-legend { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }

@@ -6,6 +6,86 @@
 
 let currentView = 'dashboard';
 
+/* ---------------- Press-and-hold drag reorder (Accounts + Dashboard) ----------------
+   Generic, dependency-free reordering: press and hold a `.drag-handle` for
+   HOLD_MS without moving more than MOVE_CANCEL_PX, then drag to reposition
+   the item within its container. Only the handle itself starts a drag —
+   everything else on the card/panel (edit/delete buttons, links) works
+   exactly as before, untouched. Built on Pointer Events so the same code
+   handles mouse (desktop) and touch (mobile) — `touch-action: none` on
+   `.drag-handle` (see styles.css) stops the browser trying to scroll the
+   page once a drag actually starts.
+*/
+function enableDragReorder(container, itemSelector, getKey, onReorder) {
+  if (!container) return;
+  const HOLD_MS = 250;
+  const MOVE_CANCEL_PX = 8;
+  let pressTimer = null;
+  let dragEl = null;
+  let startX = 0, startY = 0;
+
+  const cancelPress = () => { clearTimeout(pressTimer); pressTimer = null; };
+
+  const endDrag = () => {
+    if (dragEl) {
+      dragEl.classList.remove('dragging');
+      const newOrder = Array.from(container.querySelectorAll(itemSelector)).map(getKey);
+      onReorder(newOrder);
+    }
+    dragEl = null;
+    cancelPress();
+  };
+
+  container.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    const item = handle.closest(itemSelector);
+    if (!item) return;
+    startX = e.clientX; startY = e.clientY;
+    cancelPress();
+    pressTimer = setTimeout(() => {
+      dragEl = item;
+      dragEl.classList.add('dragging');
+      try { handle.setPointerCapture(e.pointerId); } catch (err) { /* not critical */ }
+    }, HOLD_MS);
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if (dragEl) {
+      e.preventDefault();
+      const items = Array.from(container.querySelectorAll(itemSelector)).filter(i => i !== dragEl);
+      // Grid-aware: account cards can sit side by side (multi-column grid),
+      // dashboard panels are always full-width (effectively single column).
+      // Find whichever item's center the pointer is nearest to, then decide
+      // before/after using whichever axis actually distinguishes items —
+      // horizontal if the pointer is roughly level with that item (same
+      // row), vertical otherwise.
+      let closest = null, closestDist = Infinity;
+      for (const item of items) {
+        const rect = item.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+        const dist = (e.clientX - cx) ** 2 + (e.clientY - cy) ** 2;
+        if (dist < closestDist) { closestDist = dist; closest = { item, rect, cx, cy }; }
+      }
+      if (closest) {
+        const sameRow = Math.abs(e.clientY - closest.cy) < closest.rect.height / 2;
+        const after = sameRow ? e.clientX > closest.cx : e.clientY > closest.cy;
+        if (after) closest.item.after(dragEl);
+        else closest.item.before(dragEl);
+      } else {
+        container.appendChild(dragEl);
+      }
+      return;
+    }
+    if (pressTimer && (Math.abs(e.clientX - startX) > MOVE_CANCEL_PX || Math.abs(e.clientY - startY) > MOVE_CANCEL_PX)) {
+      cancelPress();
+    }
+  });
+
+  container.addEventListener('pointerup', endDrag);
+  container.addEventListener('pointercancel', endDrag);
+}
+
 /* ---------------- Theme toggle ---------------- */
 
 function applyThemeIcon() {
@@ -237,6 +317,7 @@ document.getElementById('btn-add-transaction').addEventListener('click', async (
     <div class="form-field">
       <label>Note</label>
       <input type="text" id="tx-note" placeholder="e.g. Tesco weekly shop" />
+      <p class="ledger-meta" id="tx-transfer-hint" style="display:none"></p>
     </div>
     <div class="form-row">
       <div class="form-field">
@@ -265,6 +346,23 @@ document.getElementById('btn-add-transaction').addEventListener('click', async (
     selectedKind = btn.dataset.kind;
     document.querySelectorAll('#tx-kind-toggle button').forEach(b => b.classList.toggle('selected', b === btn));
   });
+
+  // Nudge: if the note mentions the name of a DIFFERENT account of the
+  // user's own, this is likely money moving between their own accounts
+  // (e.g. a credit card repayment) rather than real income/spending — a
+  // Transaction can't credit a second account, only + Transfer can.
+  const noteInput = document.getElementById('tx-note');
+  const accountSelect = document.getElementById('tx-account');
+  const transferHint = document.getElementById('tx-transfer-hint');
+  const checkTransferHint = () => {
+    const note = noteInput.value.trim().toLowerCase();
+    const selectedAccountId = Number(accountSelect.value);
+    const match = note && accounts.find(a => a.id !== selectedAccountId && note.includes(a.name.toLowerCase()));
+    transferHint.textContent = match ? t('transactions.transferHint', { name: match.name }) : '';
+    transferHint.style.display = match ? '' : 'none';
+  };
+  noteInput.addEventListener('input', checkTransferHint);
+  accountSelect.addEventListener('change', checkTransferHint);
 
   document.getElementById('tx-cancel').addEventListener('click', closeModal);
   document.getElementById('tx-save').addEventListener('click', async () => {
@@ -535,6 +633,7 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
         <option value="isa">ISA</option>
         <option value="credit">Credit card</option>
         <option value="cash">Cash</option>
+        <option value="pension">Pension</option>
       </select>
     </div>
     <div class="form-field">
@@ -545,6 +644,11 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
       <label>${t('accounts.creditLimitLabel')}</label>
       <input type="number" step="0.01" min="0" id="acc-credit-limit" placeholder="0.00" />
     </div>
+    <div class="form-field" id="acc-repayment-day-field" style="display:none">
+      <label>${t('accounts.repaymentDueDayLabel')}</label>
+      <input type="number" min="1" max="31" id="acc-repayment-day" placeholder="e.g. 21" />
+      <p class="ledger-meta">${t('accounts.repaymentDueDayHint')}</p>
+    </div>
     <div class="form-actions">
       <button class="btn-secondary" id="acc-cancel">Cancel</button>
       <button class="btn-primary" id="acc-save">Save</button>
@@ -553,7 +657,12 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
 
   const typeSelect = document.getElementById('acc-type');
   const limitField = document.getElementById('acc-credit-limit-field');
-  const toggleLimitField = () => { limitField.style.display = typeSelect.value === 'credit' ? '' : 'none'; };
+  const repaymentField = document.getElementById('acc-repayment-day-field');
+  const toggleLimitField = () => {
+    const isCredit = typeSelect.value === 'credit';
+    limitField.style.display = isCredit ? '' : 'none';
+    repaymentField.style.display = isCredit ? '' : 'none';
+  };
   typeSelect.addEventListener('change', toggleLimitField);
   toggleLimitField();
 
@@ -565,7 +674,8 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
       name,
       type: typeSelect.value,
       startingBalance: document.getElementById('acc-balance').value || 0,
-      creditLimit: document.getElementById('acc-credit-limit').value
+      creditLimit: document.getElementById('acc-credit-limit').value,
+      repaymentDueDay: document.getElementById('acc-repayment-day').value
     });
     closeModal();
     refreshCurrentView();
@@ -845,6 +955,7 @@ document.addEventListener('click', async (e) => {
           <option value="isa">ISA</option>
           <option value="credit">Credit card</option>
           <option value="cash">Cash</option>
+          <option value="pension">Pension</option>
         </select>
       </div>
       <div class="form-field">
@@ -856,6 +967,11 @@ document.addEventListener('click', async (e) => {
         <label>${t('accounts.creditLimitLabel')}</label>
         <input type="number" step="0.01" min="0" id="acc-edit-credit-limit" value="${account.creditLimit || ''}" placeholder="0.00" />
       </div>
+      <div class="form-field" id="acc-edit-repayment-day-field" style="display:none">
+        <label>${t('accounts.repaymentDueDayLabel')}</label>
+        <input type="number" min="1" max="31" id="acc-edit-repayment-day" value="${account.repaymentDueDay || ''}" placeholder="e.g. 21" />
+        <p class="ledger-meta">${t('accounts.repaymentDueDayHint')}</p>
+      </div>
       <div class="form-actions">
         <button class="btn-secondary" id="acc-edit-cancel">Cancel</button>
         <button class="btn-primary" id="acc-edit-save">Save</button>
@@ -865,7 +981,12 @@ document.addEventListener('click', async (e) => {
 
     const editTypeSelect = document.getElementById('acc-edit-type');
     const editLimitField = document.getElementById('acc-edit-credit-limit-field');
-    const toggleEditLimitField = () => { editLimitField.style.display = editTypeSelect.value === 'credit' ? '' : 'none'; };
+    const editRepaymentField = document.getElementById('acc-edit-repayment-day-field');
+    const toggleEditLimitField = () => {
+      const isCredit = editTypeSelect.value === 'credit';
+      editLimitField.style.display = isCredit ? '' : 'none';
+      editRepaymentField.style.display = isCredit ? '' : 'none';
+    };
     editTypeSelect.addEventListener('change', toggleEditLimitField);
     toggleEditLimitField();
 
@@ -877,7 +998,8 @@ document.addEventListener('click', async (e) => {
         name,
         type: editTypeSelect.value,
         balance: document.getElementById('acc-edit-balance').value,
-        creditLimit: document.getElementById('acc-edit-credit-limit').value
+        creditLimit: document.getElementById('acc-edit-credit-limit').value,
+        repaymentDueDay: document.getElementById('acc-edit-repayment-day').value
       });
       closeModal();
       refreshCurrentView();
@@ -1014,7 +1136,7 @@ document.addEventListener('click', async (e) => {
   }
 
   if (btn.dataset.action === 'reset-settings') {
-    if (confirm('Reset tabs, dashboard layout, and theme colours to their defaults?')) {
+    if (confirm('Reset tabs, dashboard layout, account order, and theme colours to their defaults?')) {
       resetLayoutSettings();
       renderNavBar();
       document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
@@ -1092,3 +1214,14 @@ document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', 
 applyCustomColors();
 applyStaticTranslations();
 refreshCurrentView();
+
+// Both containers are static in index.html (only their children get
+// re-rendered), so these only need wiring up once — not on every render.
+enableDragReorder(document.getElementById('account-list'), '.account-card', el => Number(el.dataset.id), (newOrder) => {
+  saveAccountOrder(newOrder);
+});
+enableDragReorder(document.getElementById('dashboard-panels'), '[data-panel]', el => el.dataset.panel, (newOrder) => {
+  const settings = getDashboardSettings();
+  settings.order = newOrder;
+  saveDashboardSettings(settings);
+});

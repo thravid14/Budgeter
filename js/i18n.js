@@ -46,7 +46,11 @@ const translations = {
       cashFlowLowest: 'Lowest projected: {amt} on {date}',
       cashFlowBalanceAfter: 'balance after: {amt}',
       cashFlowEmpty: 'No bills due in the next 30 days — nothing to project.',
-      cashFlowNote: "Only accounts for bills you've already added — doesn't predict income or day-to-day spending."
+      cashFlowNote: "Only accounts for bills you've already added — doesn't predict income or day-to-day spending.",
+      creditCardReminders: 'Credit card repayment reminders',
+      creditReminderToday: '{name} repayment due today ({date}).',
+      creditReminderDueIn: '{name} repayment due in {n}d ({date}).',
+      creditReminderOverdue: '{name} repayment was due {n}d ago ({date}).'
     },
     common: { income: 'Income', expense: 'Expense' },
     transactions: {
@@ -54,7 +58,8 @@ const translations = {
       addTransfer: '+ Transfer', addTransaction: '+ Add transaction',
       allAccounts: 'All accounts', allCategories: 'All categories',
       empty: 'No transactions yet. Add your first one to get started.',
-      uncategorized: 'Uncategorized', transferLabel: 'Transfer'
+      uncategorized: 'Uncategorized', transferLabel: 'Transfer',
+      transferHint: 'This mentions "{name}" — if you\'re moving money to another account of yours (like a credit card repayment), use + Transfer instead so both balances update correctly.'
     },
     bills: {
       title: 'Bills', addBill: '+ Add bill',
@@ -110,11 +115,14 @@ const translations = {
       title: 'Accounts', addAccount: '+ Add account',
       empty: 'No accounts yet. Add one (e.g. "Cash" or "Current account") to begin.',
       typeCurrent: 'Current account', typeSavings: 'Savings account',
-      typeIsa: 'ISA', typeCredit: 'Credit card', typeCash: 'Cash',
+      typeIsa: 'ISA', typeCredit: 'Credit card', typeCash: 'Cash', typePension: 'Pension',
       currentBalanceLabel: 'Current balance',
       editBalanceHint: "Changing this doesn't touch any of your existing transactions — it just adjusts the account's starting point so the balance shown everywhere (Dashboard, Net Worth, etc.) matches what you enter here.",
       creditLimitLabel: 'Credit limit (optional)',
-      availableOfLimit: '{available} available of {limit} limit'
+      availableOfLimit: '{available} available of {limit} limit',
+      repaymentDueDayLabel: 'Repayment due day (optional)',
+      repaymentDueDayHint: "Shows a reminder near the top of your Dashboard when this date is coming up. Doesn't track whether you've actually paid — just a nudge so it isn't forgotten.",
+      reorderHandle: 'Press and hold to reorder'
     },
     sync: {
       title: 'Sync', sub: 'Keep your phone and desktop in step — encrypted so only you can read it.',
@@ -128,9 +136,9 @@ const translations = {
     help: {
       title: 'Help', sub: 'What everything does, in plain language',
       dashboardHeading: 'Dashboard',
-      dashboardBody: "Your at-a-glance overview: total balance across all accounts (with a small trend line showing the last 6 months), this month's income and expenses, upcoming bills, a 30-day cash flow forecast, a breakdown of spending by category, and your most recent transactions. The forecast projects your balance forward using bills you've already added — it lowers the balance on each bill's due date and flags the lowest point it expects to reach, so you can spot a tight patch coming. It can't know about income or day-to-day spending you haven't recorded, so treat it as a floor, not a prediction.",
+      dashboardBody: "Your at-a-glance overview: credit card repayment reminders (if any are due within a week), total balance across all accounts (with a small trend line showing the last 6 months), this month's income and expenses, upcoming bills, a 30-day cash flow forecast, a breakdown of spending by category, and your most recent transactions. The forecast projects your balance forward using bills you've already added — it lowers the balance on each bill's due date and flags the lowest point it expects to reach, so you can spot a tight patch coming. It can't know about income or day-to-day spending you haven't recorded, so treat it as a floor, not a prediction.",
       transactionsHeading: 'Transactions',
-      transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, and filter by account, category, or month. CSV export/import moved to Settings → Data, to keep this page focused on your day-to-day entries.',
+      transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, and filter by account, category, or month. CSV export/import moved to Settings → Data, to keep this page focused on your day-to-day entries. If a note mentions another account of yours (e.g. paying off a credit card), a small hint appears suggesting + Transfer instead — a Transaction can only ever touch one account.',
       billsHeading: 'Bills',
       billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date. Tick "This is a subscription" (or use the "Sub" button on an existing bill) to tag things like Netflix or Spotify — a running monthly subscription total and a filter to show just those appears above the list once you\'ve tagged at least one.',
       standingOrdersHeading: 'Standing Orders',
@@ -146,7 +154,7 @@ const translations = {
       categoriesHeading: 'Categories',
       categoriesBody: 'Tags for your transactions (e.g. Groceries, Salary), each marked as income or expense with a colour used throughout the charts.',
       accountsHeading: 'Accounts',
-      accountsBody: "Your current accounts, savings accounts, credit cards, and cash — each with a starting balance (which can be negative, e.g. for a credit card you're carrying a balance on). Budgeter works out the running balance from that starting point plus every transaction and transfer since. Use the ✎ button to rename an account, change its type, or correct its balance if it's drifted from your real bank balance — editing the balance doesn't touch any existing transactions, it just quietly adjusts the starting point so every screen (Dashboard, Net Worth, etc.) matches straight away. Credit cards can also have a credit limit set, which shows a used/available bar on the account card.",
+      accountsBody: "Your current accounts, savings accounts, credit cards, and cash — each with a starting balance (which can be negative, e.g. for a credit card you're carrying a balance on). Budgeter works out the running balance from that starting point plus every transaction and transfer since. Use the ✎ button to rename an account, change its type, or correct its balance if it's drifted from your real bank balance — editing the balance doesn't touch any existing transactions, it just quietly adjusts the starting point so every screen (Dashboard, Net Worth, etc.) matches straight away. Credit cards can also have a credit limit (shows a used/available bar) and a repayment due day (shows a reminder near the top of your Dashboard when it's coming up — a nudge only, it doesn't track whether you've actually paid). To pay off a credit card, use + Transfer (or a Standing Order if it's the same amount every month) from the paying account to the card — never a regular Transaction, which can't credit a second account. Press and hold the ⠿ handle on a card to drag it into a different order — works with touch or a mouse. Accounts also include Current, Savings, ISA, Credit card, Cash, and now Pension.",
       syncHeading: 'Sync',
       syncBody: "Keep your phone and desktop in step. Your data is encrypted on your device before it's ever sent anywhere — set a passphrase once, enter the same one on your other device, and they'll share the same (encrypted) data.",
       fieldGuideHeading: 'Field guide',
@@ -219,7 +227,11 @@ const translations = {
       cashFlowLowest: 'Punto más bajo previsto: {amt} el {date}',
       cashFlowBalanceAfter: 'saldo después: {amt}',
       cashFlowEmpty: 'No hay facturas que venzan en los próximos 30 días — nada que prever.',
-      cashFlowNote: 'Solo tiene en cuenta las facturas que ya has añadido — no predice ingresos ni gastos del día a día.'
+      cashFlowNote: 'Solo tiene en cuenta las facturas que ya has añadido — no predice ingresos ni gastos del día a día.',
+      creditCardReminders: 'Recordatorios de pago de tarjetas de crédito',
+      creditReminderToday: 'Pago de {name} vence hoy ({date}).',
+      creditReminderDueIn: 'Pago de {name} vence en {n}d ({date}).',
+      creditReminderOverdue: 'Pago de {name} venció hace {n}d ({date}).'
     },
     common: { income: 'Ingreso', expense: 'Gasto' },
     transactions: {
@@ -227,7 +239,8 @@ const translations = {
       addTransfer: '+ Transferencia', addTransaction: '+ Añadir transacción',
       allAccounts: 'Todas las cuentas', allCategories: 'Todas las categorías',
       empty: 'Aún no hay transacciones. Añade la primera para empezar.',
-      uncategorized: 'Sin categoría', transferLabel: 'Transferencia'
+      uncategorized: 'Sin categoría', transferLabel: 'Transferencia',
+      transferHint: 'Esto menciona "{name}" — si estás moviendo dinero a otra cuenta tuya (como el pago de una tarjeta de crédito), usa + Transferencia en su lugar para que ambos saldos se actualicen correctamente.'
     },
     bills: {
       title: 'Facturas', addBill: '+ Añadir factura',
@@ -283,11 +296,14 @@ const translations = {
       title: 'Cuentas', addAccount: '+ Añadir cuenta',
       empty: 'Aún no hay cuentas. Añade una (p. ej. "Efectivo" o "Cuenta corriente") para empezar.',
       typeCurrent: 'Cuenta corriente', typeSavings: 'Cuenta de ahorros',
-      typeIsa: 'ISA', typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo',
+      typeIsa: 'ISA', typeCredit: 'Tarjeta de crédito', typeCash: 'Efectivo', typePension: 'Pensión',
       currentBalanceLabel: 'Saldo actual',
       editBalanceHint: 'Cambiar esto no afecta a ninguna de tus transacciones existentes — solo ajusta el punto de partida de la cuenta para que el saldo mostrado en todas partes (Panel, Patrimonio neto, etc.) coincida con lo que introduces aquí.',
       creditLimitLabel: 'Límite de crédito (opcional)',
-      availableOfLimit: '{available} disponible de {limit} de límite'
+      availableOfLimit: '{available} disponible de {limit} de límite',
+      repaymentDueDayLabel: 'Día de vencimiento del pago (opcional)',
+      repaymentDueDayHint: 'Muestra un recordatorio cerca de la parte superior de tu Panel cuando se acerque esta fecha. No comprueba si realmente has pagado — es solo un aviso para que no se te olvide.',
+      reorderHandle: 'Mantén pulsado para reordenar'
     },
     sync: {
       title: 'Sincronización', sub: 'Mantén tu móvil y tu ordenador sincronizados — cifrado para que solo tú puedas leerlo.',
@@ -301,9 +317,9 @@ const translations = {
     help: {
       title: 'Ayuda', sub: 'Qué hace cada cosa, en lenguaje sencillo',
       dashboardHeading: 'Panel',
-      dashboardBody: 'Tu resumen de un vistazo: saldo total de todas las cuentas (con una pequeña línea de tendencia de los últimos 6 meses), ingresos y gastos de este mes, próximas facturas, una previsión de flujo de caja a 30 días, un desglose del gasto por categoría y tus transacciones más recientes. La previsión proyecta tu saldo hacia adelante usando las facturas que ya has añadido — lo reduce en la fecha de vencimiento de cada factura y señala el punto más bajo que espera alcanzar, para que puedas anticipar un momento ajustado. No puede saber sobre ingresos o gastos del día a día que no hayas registrado, así que trátala como un suelo, no como una predicción.',
+      dashboardBody: 'Tu resumen de un vistazo: recordatorios de pago de tarjetas de crédito (si alguno vence dentro de una semana), saldo total de todas las cuentas (con una pequeña línea de tendencia de los últimos 6 meses), ingresos y gastos de este mes, próximas facturas, una previsión de flujo de caja a 30 días, un desglose del gasto por categoría y tus transacciones más recientes. La previsión proyecta tu saldo hacia adelante usando las facturas que ya has añadido — lo reduce en la fecha de vencimiento de cada factura y señala el punto más bajo que espera alcanzar, para que puedas anticipar un momento ajustado. No puede saber sobre ingresos o gastos del día a día que no hayas registrado, así que trátala como un suelo, no como una predicción.',
       transactionsHeading: 'Transacciones',
-      transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, y filtra por cuenta, categoría o mes. La exportación/importación CSV se trasladó a Ajustes → Datos, para mantener esta página centrada en tus movimientos del día a día.',
+      transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, y filtra por cuenta, categoría o mes. La exportación/importación CSV se trasladó a Ajustes → Datos, para mantener esta página centrada en tus movimientos del día a día. Si una nota menciona otra cuenta tuya (p. ej. pagar una tarjeta de crédito), aparece un pequeño aviso sugiriendo usar + Transferencia en su lugar — una Transacción solo puede afectar a una cuenta.',
       billsHeading: 'Facturas',
       billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento. Marca "Es una suscripción" (o usa el botón "Sus" en una factura ya creada) para etiquetar cosas como Netflix o Spotify — un total mensual de suscripciones y un filtro para mostrar solo esas aparece encima de la lista en cuanto etiquetes al menos una.',
       standingOrdersHeading: 'Órdenes permanentes',
@@ -319,7 +335,7 @@ const translations = {
       categoriesHeading: 'Categorías',
       categoriesBody: 'Etiquetas para tus transacciones (p. ej. Compras, Nómina), cada una marcada como ingreso o gasto con un color usado en los gráficos.',
       accountsHeading: 'Cuentas',
-      accountsBody: 'Tus cuentas corrientes, cuentas de ahorro, tarjetas de crédito y efectivo — cada una con un saldo inicial (que puede ser negativo, por ejemplo para una tarjeta de crédito con saldo pendiente). Budgeter calcula el saldo actual a partir de ese punto de partida más cada transacción y transferencia desde entonces. Usa el botón ✎ para cambiar el nombre de una cuenta, su tipo, o corregir su saldo si se ha desviado de tu saldo bancario real — editar el saldo no afecta a ninguna transacción existente, simplemente ajusta el punto de partida para que todas las pantallas (Panel, Patrimonio neto, etc.) coincidan al instante. Las tarjetas de crédito también pueden tener un límite de crédito, que muestra una barra de usado/disponible en la tarjeta de la cuenta.',
+      accountsBody: 'Tus cuentas corrientes, cuentas de ahorro, tarjetas de crédito y efectivo — cada una con un saldo inicial (que puede ser negativo, por ejemplo para una tarjeta de crédito con saldo pendiente). Budgeter calcula el saldo actual a partir de ese punto de partida más cada transacción y transferencia desde entonces. Usa el botón ✎ para cambiar el nombre de una cuenta, su tipo, o corregir su saldo si se ha desviado de tu saldo bancario real — editar el saldo no afecta a ninguna transacción existente, simplemente ajusta el punto de partida para que todas las pantallas (Panel, Patrimonio neto, etc.) coincidan al instante. Las tarjetas de crédito también pueden tener un límite de crédito (muestra una barra de usado/disponible) y un día de vencimiento de pago (muestra un recordatorio cerca de la parte superior de tu Panel cuando se acerque — solo un aviso, no comprueba si realmente has pagado). Para pagar una tarjeta de crédito, usa + Transferencia (u una Orden permanente si es el mismo importe cada mes) desde la cuenta que paga hacia la tarjeta — nunca una Transacción normal, que no puede abonar a una segunda cuenta. Mantén pulsado el tirador ⠿ de una tarjeta para arrastrarla a otro orden — funciona con el dedo o con el ratón. Las cuentas también incluyen Corriente, Ahorros, ISA, Tarjeta de crédito, Efectivo y ahora Pensión.',
       syncHeading: 'Sincronización',
       syncBody: 'Mantén tu móvil y tu ordenador sincronizados. Tus datos se cifran en tu dispositivo antes de enviarse a ningún sitio — establece una contraseña una vez, introduce la misma en tu otro dispositivo, y compartirán los mismos datos (cifrados).',
       fieldGuideHeading: 'Guía de campos',

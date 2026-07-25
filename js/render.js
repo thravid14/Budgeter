@@ -53,12 +53,33 @@ function renderSparkline(values, width, height) {
   return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none"><polyline points="${points}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+function renderCreditCardReminders(reminders) {
+  const banner = document.getElementById('credit-reminder-banner');
+  if (reminders.length === 0) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+
+  banner.style.display = '';
+  banner.classList.toggle('urgent', reminders.some(r => r.daysUntilDue < 0));
+  banner.innerHTML = reminders.map(r => {
+    const name = escapeHtml(r.name);
+    const date = formatUKDate(r.dueDateStr);
+    let text;
+    if (r.daysUntilDue === 0) text = t('dashboard.creditReminderToday', { name, date });
+    else if (r.daysUntilDue > 0) text = t('dashboard.creditReminderDueIn', { name, n: r.daysUntilDue, date });
+    else text = t('dashboard.creditReminderOverdue', { name, n: Math.abs(r.daysUntilDue), date });
+    return `<p class="reminder-line">${text}</p>`;
+  }).join('');
+}
+
 async function renderDashboard() {
   applyDashboardLayout();
   const month = currentMonthStr();
   document.getElementById('month-label').textContent = monthLabel(month);
 
-  const [balance, { income, expense }, breakdown, allTx, allTransfers, categories, accounts, bills, netWorthTrend, forecast] = await Promise.all([
+  const [balance, { income, expense }, breakdown, allTx, allTransfers, categories, accounts, bills, netWorthTrend, forecast, creditReminders] = await Promise.all([
     getTotalBalance(),
     getMonthTotals(month),
     getCategoryBreakdown(month),
@@ -68,8 +89,11 @@ async function renderDashboard() {
     getAccounts(),
     getBillsWithStatus(month),
     getNetWorthTrend(6),
-    getCashFlowForecast(30)
+    getCashFlowForecast(30),
+    getCreditCardReminders(7)
   ]);
+
+  renderCreditCardReminders(creditReminders);
 
   document.getElementById('stat-balance').textContent = formatMoney(balance);
   document.getElementById('balance-sparkline').innerHTML = renderSparkline(netWorthTrend.map(t => t.netWorth));
@@ -561,6 +585,7 @@ function accountTypeLabel(type) {
     isa: t('accounts.typeIsa'),
     credit: t('accounts.typeCredit'),
     cash: t('accounts.typeCash'),
+    pension: t('accounts.typePension'),
     bank: t('accounts.typeCurrent'),
     card: t('accounts.typeCredit')
   };
@@ -574,15 +599,27 @@ function accountTypeIcon(type) {
     savings: '<ellipse cx="12" cy="8" rx="7" ry="3"/><path d="M5 8v8c0 1.7 3.1 3 7 3s7-1.3 7-3V8"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
     isa: '<path d="M12 3l7 3v6c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
     credit: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>',
-    cash: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/>'
+    cash: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/>',
+    pension: '<path d="M12 21v-8"/><path d="M12 13c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6z"/><path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z"/><circle cx="12" cy="21" r="1" fill="currentColor" stroke="none"/>'
   };
   const key = (type === 'bank') ? 'current' : (type === 'card') ? 'credit' : type;
   const path = icons[key] || icons.current;
   return `<svg class="acc-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">${path}</svg>`;
 }
 
+// Applies the user's drag-reordered account order (settings.js), with any
+// account not yet in that order (new, or before reordering was ever used)
+// appended at the end — same fallback pattern as nav/dashboard ordering.
+function orderAccounts(accounts) {
+  const order = getAccountOrder();
+  const byId = new Map(accounts.map(a => [a.id, a]));
+  const ordered = order.map(id => byId.get(id)).filter(Boolean);
+  accounts.forEach(a => { if (!order.includes(a.id)) ordered.push(a); });
+  return ordered;
+}
+
 async function renderAccounts() {
-  const accounts = await getAccounts();
+  const accounts = orderAccounts(await getAccounts());
   const el = document.getElementById('account-list');
   if (accounts.length === 0) {
     el.innerHTML = `<p class="empty-note">${t('accounts.empty')}</p>`;
@@ -596,7 +633,8 @@ async function renderAccounts() {
     const percent = hasLimit ? Math.min(100, (used / a.creditLimit) * 100) : 0;
 
     return `
-      <div class="account-card">
+      <div class="account-card" data-id="${a.id}">
+        <div class="drag-row"><span class="drag-handle" aria-label="${t('accounts.reorderHandle')}">⠿</span></div>
         ${accountTypeIcon(a.type)}
         <div class="acc-name">${escapeHtml(a.name)}</div>
         <div class="acc-type">${accountTypeLabel(a.type)}</div>
