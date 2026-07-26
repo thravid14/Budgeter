@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budgeter-v36';
+const CACHE_NAME = 'budgeter-v37';
 
 const FILES_TO_CACHE = [
   './',
@@ -9,6 +9,7 @@ const FILES_TO_CACHE = [
   './js/i18n.js',
   './js/settings.js',
   './js/render.js',
+  './js/applock.js',
   './js/app.js',
   './js/sync.js',
   './icons/icon-192.png',

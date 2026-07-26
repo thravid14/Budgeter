@@ -24,6 +24,22 @@
 </head>
 <body>
 
+<div id="applock-overlay" class="applock-overlay" style="display:none">
+  <div class="applock-box">
+    <div class="brand applock-brand">
+      <span class="brand-mark">B</span>
+      <span class="brand-name">Budgeter</span>
+    </div>
+    <p class="applock-message" id="applock-message" data-i18n="applock.message">Unlock to continue</p>
+    <button class="btn-primary applock-biometric-btn" id="applock-biometric-btn" style="display:none" data-i18n="applock.biometricButton">Unlock with Face ID / fingerprint</button>
+    <div class="applock-pin-row">
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" id="applock-pin-input" data-i18n-placeholder="applock.pinPlaceholder" placeholder="PIN" class="applock-pin-input" />
+      <button class="btn-secondary" id="applock-pin-submit" data-i18n="applock.unlockButton">Unlock</button>
+    </div>
+    <p class="applock-error" id="applock-error" style="display:none"></p>
+  </div>
+</div>
+
 <button id="lang-toggle" class="icon-btn" aria-label="Switch language">ES</button>
 <button id="theme-toggle" class="icon-btn" aria-label="Toggle light/dark theme">
   <svg id="theme-icon-dark" class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4.5"/><line x1="12" y1="2.5" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="21.5"/><line x1="2.5" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="21.5" y2="12"/><line x1="5" y1="5" x2="6.8" y2="6.8"/><line x1="17.2" y1="17.2" x2="19" y2="19"/><line x1="19" y1="5" x2="17.2" y2="6.8"/><line x1="6.8" y1="17.2" x2="5" y2="19"/></svg>
@@ -360,6 +376,18 @@
       </div>
 
       <div class="panel">
+        <h2 data-i18n="help.appLockHeading">App Lock</h2>
+        <p data-i18n="help.appLockBody">Turn on in Settings → App Lock to require your fingerprint/Face ID
+          (if your device supports it) or a PIN before the app opens — useful
+          if your phone is ever lost or picked up while already unlocked. This
+          is a lock on the app itself, not extra encryption of what's stored —
+          your phone's own lock screen is still what actually protects the
+          data at rest. If Find My iPhone/Find My Device ever remotely wipes
+          your phone, that erases everything on it, including this app's
+          data, automatically — there's nothing separate to set up for that.</p>
+      </div>
+
+      <div class="panel">
         <h2 data-i18n="help.fieldGuideHeading">Field guide</h2>
         <dl class="help-field-list">
           <dt data-i18n="help.startingBalanceTerm">Starting balance</dt>
@@ -419,6 +447,12 @@
       </div>
 
       <div class="panel">
+        <h2 data-i18n="settings.appLockHeading">App Lock</h2>
+        <p class="sub" data-i18n="settings.appLockBody">Require your fingerprint/Face ID or a PIN to open the app — useful if your phone is ever lost while unlocked.</p>
+        <div id="applock-settings"></div>
+      </div>
+
+      <div class="panel">
         <button class="btn-secondary" data-action="reset-settings" data-i18n="settings.reset">Reset to defaults</button>
       </div>
     </section>
@@ -442,6 +476,7 @@
 <script src="js/i18n.js"></script>
 <script src="js/settings.js"></script>
 <script src="js/render.js"></script>
+<script src="js/applock.js"></script>
 <script src="js/app.js"></script>
 <script type="module" src="js/sync.js"></script>
 </body>

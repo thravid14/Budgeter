@@ -91,6 +91,30 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 :root[data-theme="light"] .btn-primary { color: #FFF8E8; }
 
+/* ===== App lock ===== */
+.applock-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.applock-box {
+  width: 100%; max-width: 320px;
+  display: flex; flex-direction: column; align-items: center; gap: 18px;
+  text-align: center;
+}
+.applock-brand { padding: 0 0 6px; }
+.applock-message { color: var(--text-dim); margin: 0; font-size: 0.95rem; }
+.applock-biometric-btn { width: 100%; }
+.applock-pin-row { display: flex; gap: 8px; width: 100%; }
+.applock-pin-input {
+  flex: 1; min-width: 0;
+  padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface);
+  color: var(--text); font-size: 1rem; letter-spacing: 0.2em; text-align: center;
+}
+.applock-error { color: var(--expense); margin: 0; font-size: 0.85rem; }
+
 /* ===== App shell ===== */
 #app { display: flex; min-height: 100vh; }
 

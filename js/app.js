@@ -259,7 +259,7 @@ async function refreshCurrentView() {
   if (currentView === 'categories') await renderCategories();
   if (currentView === 'accounts') await renderAccounts();
   if (currentView === 'sync') await renderSync();
-  if (currentView === 'settings') renderSettingsPage();
+  if (currentView === 'settings') { renderSettingsPage(); renderAppLockSettings(); }
 }
 
 const overlay = document.getElementById('modal-overlay');
@@ -1324,7 +1324,7 @@ renderNavBar();
 document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === currentView));
 applyCustomColors();
 applyStaticTranslations();
-refreshCurrentView();
+initAppLock();
 
 // Both containers are static in index.html (only their children get
 // re-rendered), so these only need wiring up once — not on every render.

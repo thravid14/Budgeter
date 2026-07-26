@@ -19,6 +19,10 @@ let currentLang = localStorage.getItem('budgeter_lang') || 'en';
 
 const translations = {
   en: {
+    applock: {
+      message: 'Unlock to continue', biometricButton: 'Unlock with Face ID / fingerprint',
+      pinPlaceholder: 'PIN', unlockButton: 'Unlock', wrongPin: 'Incorrect PIN.'
+    },
     nav: {
       dashboard: 'Dashboard', transactions: 'Transactions', bills: 'Bills',
       standingOrders: 'Standing Orders',
@@ -35,6 +39,21 @@ const translations = {
       coloursHeading: 'Theme colours',
       coloursBody: 'Pick your own accent, income, and expense colours — used throughout the app, including charts.',
       dataHeading: 'Data', dataBody: 'Back up your transaction history to a CSV file, or import one back in.',
+      appLockHeading: 'App Lock',
+      appLockBody: "Require your fingerprint/Face ID or a PIN to open the app — useful if your phone is ever lost while unlocked.",
+      appLockEnable: 'Turn on App Lock',
+      appLockStatusOn: 'App Lock is on',
+      appLockBiometricOn: 'biometric unlock set up',
+      appLockSetUpBiometric: 'Set up biometric unlock',
+      appLockChangePin: 'Change PIN',
+      appLockDisable: 'Turn off App Lock',
+      appLockDisableConfirm: 'Turn off App Lock? Anyone who opens the app will be able to see your data without unlocking.',
+      appLockBiometricFailed: "Couldn't set up biometric unlock — your device or browser may not support it, or the request was cancelled.",
+      appLockSetupHint: 'This PIN is your fallback if biometric unlock is ever unavailable, so choose one you\'ll remember — there\'s no recovery if you forget it.',
+      appLockNewPinLabel: 'New PIN (at least 4 digits)',
+      appLockConfirmPinLabel: 'Confirm PIN',
+      appLockPinTooShort: 'PIN must be at least 4 characters.',
+      appLockPinMismatch: "PINs don't match.",
       colourAccent: 'Accent', colourIncome: 'Income', colourExpense: 'Expense'
     },
     dashboard: {
@@ -157,6 +176,8 @@ const translations = {
       accountsBody: "Your current accounts, savings accounts, credit cards, and cash — each with a starting balance (which can be negative, e.g. for a credit card you're carrying a balance on). Budgeter works out the running balance from that starting point plus every transaction and transfer since. Use the ✎ button to rename an account, change its type, or correct its balance if it's drifted from your real bank balance — editing the balance doesn't touch any existing transactions, it just quietly adjusts the starting point so every screen (Dashboard, Net Worth, etc.) matches straight away. Credit cards can also have a credit limit (shows a used/available bar) and a repayment due day (shows a reminder near the top of your Dashboard when it's coming up — a nudge only, it doesn't track whether you've actually paid). To pay off a credit card, use + Transfer (or a Standing Order if it's the same amount every month) from the paying account to the card — never a regular Transaction, which can't credit a second account. Press and hold the ⠿ handle on a card to drag it into a different order — works with touch or a mouse. Accounts also include Current, Savings, ISA, Credit card, Cash, and now Pension.",
       syncHeading: 'Sync',
       syncBody: "Keep your phone and desktop in step. Your data is encrypted on your device before it's ever sent anywhere — set a passphrase once, enter the same one on your other device, and they'll share the same (encrypted) data.",
+      appLockHeading: 'App Lock',
+      appLockBody: "Turn on in Settings → App Lock to require your fingerprint/Face ID (if your device supports it) or a PIN before the app opens — useful if your phone is ever lost or picked up while already unlocked. This is a lock on the app itself, not extra encryption of what's stored — your phone's own lock screen is still what actually protects the data at rest. If Find My iPhone/Find My Device ever remotely wipes your phone, that erases everything on it, including this app's data, automatically — there's nothing separate to set up for that.",
       fieldGuideHeading: 'Field guide',
       startingBalanceTerm: 'Starting balance',
       startingBalanceDef: "The balance an account had before you started tracking it in Budgeter — everything from then on is worked out automatically from your transactions and transfers.",
@@ -172,6 +193,7 @@ const translations = {
     toast: {
       transactionAdded: 'Transaction added.', transferAdded: 'Transfer added.',
       categoryAdded: 'Category added.', accountAdded: 'Account added.', accountUpdated: 'Account updated.',
+      appLockEnabled: 'App Lock turned on.', appLockDisabled: 'App Lock turned off.', appLockBiometricSet: 'Biometric unlock set up.',
       billAdded: 'Bill added.', budgetAdded: 'Budget added.',
       transactionDeleted: 'Transaction deleted.', categoryDeleted: 'Category deleted.',
       accountDeleted: 'Account deleted.', billDeleted: 'Bill deleted.',
@@ -196,10 +218,14 @@ const translations = {
       addTransaction: 'Add transaction', addTransfer: 'Transfer between accounts',
       addCategory: 'Add category', addAccount: 'Add account', addBill: 'Add bill',
       addBudget: 'Add budget', addStandingOrder: 'Add standing order', addSavingsGoal: 'Add savings goal',
-      editAccount: 'Edit account'
+      editAccount: 'Edit account', setAppLockPin: 'Set App Lock PIN'
     }
   },
   es: {
+    applock: {
+      message: 'Desbloquea para continuar', biometricButton: 'Desbloquear con Face ID / huella',
+      pinPlaceholder: 'PIN', unlockButton: 'Desbloquear', wrongPin: 'PIN incorrecto.'
+    },
     nav: {
       dashboard: 'Panel', transactions: 'Transacciones', bills: 'Facturas',
       standingOrders: 'Órdenes permanentes',
@@ -216,6 +242,21 @@ const translations = {
       coloursHeading: 'Colores del tema',
       coloursBody: 'Elige tus propios colores de acento, ingresos y gastos — usados en toda la app, incluidos los gráficos.',
       dataHeading: 'Datos', dataBody: 'Haz copia de seguridad de tu historial de transacciones en un archivo CSV, o importa uno.',
+      appLockHeading: 'Bloqueo de la app',
+      appLockBody: 'Exige tu huella dactilar/Face ID o un PIN para abrir la app — útil si alguna vez pierdes el móvil desbloqueado.',
+      appLockEnable: 'Activar bloqueo de la app',
+      appLockStatusOn: 'El bloqueo de la app está activado',
+      appLockBiometricOn: 'desbloqueo biométrico configurado',
+      appLockSetUpBiometric: 'Configurar desbloqueo biométrico',
+      appLockChangePin: 'Cambiar PIN',
+      appLockDisable: 'Desactivar bloqueo de la app',
+      appLockDisableConfirm: '¿Desactivar el bloqueo de la app? Cualquiera que abra la app podrá ver tus datos sin desbloquearla.',
+      appLockBiometricFailed: 'No se pudo configurar el desbloqueo biométrico — puede que tu dispositivo o navegador no lo admita, o se canceló la solicitud.',
+      appLockSetupHint: 'Este PIN es tu alternativa si el desbloqueo biométrico no está disponible, así que elige uno que recuerdes — no hay forma de recuperarlo si lo olvidas.',
+      appLockNewPinLabel: 'PIN nuevo (mínimo 4 dígitos)',
+      appLockConfirmPinLabel: 'Confirmar PIN',
+      appLockPinTooShort: 'El PIN debe tener al menos 4 caracteres.',
+      appLockPinMismatch: 'Los PIN no coinciden.',
       colourAccent: 'Acento', colourIncome: 'Ingresos', colourExpense: 'Gastos'
     },
     dashboard: {
@@ -338,6 +379,8 @@ const translations = {
       accountsBody: 'Tus cuentas corrientes, cuentas de ahorro, tarjetas de crédito y efectivo — cada una con un saldo inicial (que puede ser negativo, por ejemplo para una tarjeta de crédito con saldo pendiente). Budgeter calcula el saldo actual a partir de ese punto de partida más cada transacción y transferencia desde entonces. Usa el botón ✎ para cambiar el nombre de una cuenta, su tipo, o corregir su saldo si se ha desviado de tu saldo bancario real — editar el saldo no afecta a ninguna transacción existente, simplemente ajusta el punto de partida para que todas las pantallas (Panel, Patrimonio neto, etc.) coincidan al instante. Las tarjetas de crédito también pueden tener un límite de crédito (muestra una barra de usado/disponible) y un día de vencimiento de pago (muestra un recordatorio cerca de la parte superior de tu Panel cuando se acerque — solo un aviso, no comprueba si realmente has pagado). Para pagar una tarjeta de crédito, usa + Transferencia (u una Orden permanente si es el mismo importe cada mes) desde la cuenta que paga hacia la tarjeta — nunca una Transacción normal, que no puede abonar a una segunda cuenta. Mantén pulsado el tirador ⠿ de una tarjeta para arrastrarla a otro orden — funciona con el dedo o con el ratón. Las cuentas también incluyen Corriente, Ahorros, ISA, Tarjeta de crédito, Efectivo y ahora Pensión.',
       syncHeading: 'Sincronización',
       syncBody: 'Mantén tu móvil y tu ordenador sincronizados. Tus datos se cifran en tu dispositivo antes de enviarse a ningún sitio — establece una contraseña una vez, introduce la misma en tu otro dispositivo, y compartirán los mismos datos (cifrados).',
+      appLockHeading: 'Bloqueo de la app',
+      appLockBody: 'Actívalo en Ajustes → Bloqueo de la app para exigir tu huella dactilar/Face ID (si tu dispositivo lo admite) o un PIN antes de que se abra la app — útil si alguna vez pierdes el móvil o alguien lo coge ya desbloqueado. Esto es un bloqueo de la propia app, no un cifrado adicional de lo que se guarda — la pantalla de bloqueo de tu móvil sigue siendo lo que realmente protege los datos almacenados. Si Find My iPhone/Find My Device borra tu móvil remotamente alguna vez, eso elimina todo lo que hay en él, incluidos los datos de esta app, automáticamente — no hay nada aparte que configurar para eso.',
       fieldGuideHeading: 'Guía de campos',
       startingBalanceTerm: 'Saldo inicial',
       startingBalanceDef: 'El saldo que tenía una cuenta antes de empezar a seguirla en Budgeter — todo lo demás se calcula automáticamente a partir de tus transacciones y transferencias.',
@@ -353,6 +396,7 @@ const translations = {
     toast: {
       transactionAdded: 'Transacción añadida.', transferAdded: 'Transferencia añadida.',
       categoryAdded: 'Categoría añadida.', accountAdded: 'Cuenta añadida.', accountUpdated: 'Cuenta actualizada.',
+      appLockEnabled: 'Bloqueo de la app activado.', appLockDisabled: 'Bloqueo de la app desactivado.', appLockBiometricSet: 'Desbloqueo biométrico configurado.',
       billAdded: 'Factura añadida.', budgetAdded: 'Presupuesto añadido.',
       transactionDeleted: 'Transacción eliminada.', categoryDeleted: 'Categoría eliminada.',
       accountDeleted: 'Cuenta eliminada.', billDeleted: 'Factura eliminada.',
@@ -377,7 +421,7 @@ const translations = {
       addTransaction: 'Añadir transacción', addTransfer: 'Transferir entre cuentas',
       addCategory: 'Añadir categoría', addAccount: 'Añadir cuenta', addBill: 'Añadir factura',
       addBudget: 'Añadir presupuesto', addStandingOrder: 'Añadir orden permanente', addSavingsGoal: 'Añadir meta de ahorro',
-      editAccount: 'Editar cuenta'
+      editAccount: 'Editar cuenta', setAppLockPin: 'Configurar PIN del bloqueo'
     }
   }
 };
