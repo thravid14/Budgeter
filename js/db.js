@@ -288,27 +288,37 @@ async function getStandingOrdersWithStatus(monthStr) {
 // and hasn't already run — same reasoning as runAutoPayBills(): only looks
 // at the current month, dates the transfer on the actual due date, and only
 // runs while the app is actually open. Idempotent — safe to call repeatedly.
+// Same in-flight guard as runAutoPayBills() and for the same reason: this
+// runs on every navigation, so two overlapping calls could otherwise both
+// see "not yet paid" and both create the transfer, duplicating it.
+let _autoPayStandingOrdersInFlight = false;
 async function runAutoPayStandingOrders() {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-  const daysInMonth = new Date(year, month, 0).getDate();
+  if (_autoPayStandingOrdersInFlight) return [];
+  _autoPayStandingOrdersInFlight = true;
+  try {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const daysInMonth = new Date(year, month, 0).getDate();
 
-  const [standingOrders, transfers] = await Promise.all([getStandingOrders(), db.transfers.toArray()]);
-  const justPaid = [];
+    const [standingOrders, transfers] = await Promise.all([getStandingOrders(), db.transfers.toArray()]);
+    const justPaid = [];
 
-  for (const so of standingOrders) {
-    const day = Math.min(so.dueDay, daysInMonth);
-    const dueDate = new Date(year, month - 1, day);
-    const alreadyDone = transfers.some(tr => tr.standingOrderId === so.id && tr.date.startsWith(monthStr));
-    if (alreadyDone || dueDate > today) continue;
+    for (const so of standingOrders) {
+      const day = Math.min(so.dueDay, daysInMonth);
+      const dueDate = new Date(year, month - 1, day);
+      const alreadyDone = transfers.some(tr => tr.standingOrderId === so.id && tr.date.startsWith(monthStr));
+      if (alreadyDone || dueDate > today) continue;
 
-    const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    await markStandingOrderDone(so.id, dueDateStr);
-    justPaid.push(so);
+      const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      await markStandingOrderDone(so.id, dueDateStr);
+      justPaid.push(so);
+    }
+    return justPaid;
+  } finally {
+    _autoPayStandingOrdersInFlight = false;
   }
-  return justPaid;
 }
 
 /* ---------------- Bills (recurring expenses) ----------------
@@ -385,27 +395,42 @@ async function markBillUnpaid(billId, monthStr) {
 // background process in a browser app), so "automatic" means "the next
 // time you open the app on or after the due date", not literally at
 // midnight on the due day.
+// Guards against a real race: this runs on every view change
+// (refreshCurrentView), and if the user navigates fast enough, a second
+// call can start — and read "not yet paid" — before the first call has
+// finished writing the transaction for the same bill. Both would then
+// think it's still unpaid and both would pay it, duplicating the expense.
+// Skipping the second call outright while one is already in flight is
+// enough, since the first call's write is what actually matters — the
+// next real check happens on the next navigation regardless.
+let _autoPayBillsInFlight = false;
 async function runAutoPayBills() {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const monthStr = `${year}-${String(month).padStart(2, '0')}`;
-  const daysInMonth = new Date(year, month, 0).getDate();
+  if (_autoPayBillsInFlight) return [];
+  _autoPayBillsInFlight = true;
+  try {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+    const daysInMonth = new Date(year, month, 0).getDate();
 
-  const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);
-  const justPaid = [];
+    const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);
+    const justPaid = [];
 
-  for (const bill of bills) {
-    const day = Math.min(bill.dueDay, daysInMonth);
-    const dueDate = new Date(year, month - 1, day);
-    const alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
-    if (alreadyPaid || dueDate > today) continue;
+    for (const bill of bills) {
+      const day = Math.min(bill.dueDay, daysInMonth);
+      const dueDate = new Date(year, month - 1, day);
+      const alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
+      if (alreadyPaid || dueDate > today) continue;
 
-    const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    await markBillPaid(bill.id, dueDateStr);
-    justPaid.push(bill);
+      const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      await markBillPaid(bill.id, dueDateStr);
+      justPaid.push(bill);
+    }
+    return justPaid;
+  } finally {
+    _autoPayBillsInFlight = false;
   }
-  return justPaid;
 }
 
 // Returns bills with computed status for a given month: paid/unpaid, due date, days until due.
