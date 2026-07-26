@@ -125,13 +125,19 @@ async function deleteAccount(id) {
 // untouched and getAccountBalance() recomputes to the new figure everywhere
 // it's used (Dashboard, Net Worth, the by-account pie chart, Savings Goals,
 // Trends, Cash Flow Forecast) with no other code needing to change.
-async function updateAccount(id, { name, type, balance, creditLimit, repaymentDueDay }) {
+// `balanceAsOf` (a date string) is set only when the balance came from an
+// imported file rather than being typed in by hand — shown on the account
+// card as "as of {date}" so a stale figure is obvious. Any edit that
+// doesn't explicitly pass a fresh balanceAsOf clears it, since a manual
+// change means the balance is current as of right now, not that old date.
+async function updateAccount(id, { name, type, balance, creditLimit, repaymentDueDay, balanceAsOf }) {
   const account = await getAccount(id);
   if (!account) return;
   const patch = {
     name, type,
     creditLimit: creditLimit ? Number(creditLimit) : null,
-    repaymentDueDay: repaymentDueDay ? Math.min(31, Math.max(1, Number(repaymentDueDay))) : null
+    repaymentDueDay: repaymentDueDay ? Math.min(31, Math.max(1, Number(repaymentDueDay))) : null,
+    balanceAsOf: balanceAsOf || null
   };
   if (balance !== undefined && balance !== null && balance !== '') {
     const currentBalance = await getAccountBalance(id);

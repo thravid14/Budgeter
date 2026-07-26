@@ -625,6 +625,7 @@ function accountTypeLabel(type) {
     credit: t('accounts.typeCredit'),
     cash: t('accounts.typeCash'),
     pension: t('accounts.typePension'),
+    investment: t('accounts.typeInvestment'),
     bank: t('accounts.typeCurrent'),
     card: t('accounts.typeCredit')
   };
@@ -639,7 +640,8 @@ function accountTypeIcon(type) {
     isa: '<path d="M12 3l7 3v6c0 4-3 7-7 8-4-1-7-4-7-8V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
     credit: '<rect x="3" y="6" width="18" height="12" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/>',
     cash: '<rect x="2" y="7" width="20" height="10" rx="1.5"/><circle cx="12" cy="12" r="2.5"/>',
-    pension: '<path d="M12 21v-8"/><path d="M12 13c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6z"/><path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z"/><circle cx="12" cy="21" r="1" fill="currentColor" stroke="none"/>'
+    pension: '<path d="M12 21v-8"/><path d="M12 13c0-3.5-2.5-6-6-6 0 3.5 2.5 6 6 6z"/><path d="M12 13c0-3 2-5 5-5 0 3-2 5-5 5z"/><circle cx="12" cy="21" r="1" fill="currentColor" stroke="none"/>',
+    investment: '<path d="M4 18l5-6 4 3 7-9"/><path d="M16 6h4v4"/>'
   };
   const key = (type === 'bank') ? 'current' : (type === 'card') ? 'credit' : type;
   const path = icons[key] || icons.current;
@@ -678,6 +680,7 @@ async function renderAccounts() {
         <div class="acc-name">${escapeHtml(a.name)}</div>
         <div class="acc-type">${accountTypeLabel(a.type)}</div>
         <div class="acc-balance">${formatMoney(balance)}</div>
+        ${a.balanceAsOf ? `<div class="ledger-meta">${t('accounts.balanceAsOf', { date: formatUKDate(a.balanceAsOf) })}</div>` : ''}
         ${hasLimit ? `
           <div class="breakdown-bar-track acc-credit-bar">
             <div class="breakdown-bar-fill ${percent >= 90 ? 'over' : ''}" style="width:${percent}%; background:${percent >= 90 ? 'var(--expense)' : 'var(--gold)'}"></div>

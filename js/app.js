@@ -736,6 +736,7 @@ document.getElementById('btn-add-account').addEventListener('click', () => {
         <option value="credit">Credit card</option>
         <option value="cash">Cash</option>
         <option value="pension">Pension</option>
+        <option value="investment">Investment</option>
       </select>
     </div>
     <div class="form-field">
@@ -1067,12 +1068,16 @@ document.addEventListener('click', async (e) => {
           <option value="credit">Credit card</option>
           <option value="cash">Cash</option>
           <option value="pension">Pension</option>
+          <option value="investment">Investment</option>
         </select>
       </div>
       <div class="form-field">
         <label>${t('accounts.currentBalanceLabel')}</label>
         <input type="number" step="0.01" id="acc-edit-balance" value="${balance.toFixed(2)}" />
         <p class="ledger-meta">${t('accounts.editBalanceHint')}</p>
+        <button type="button" class="btn-secondary btn-sm" id="acc-edit-import-btn" style="margin-top:6px">${t('accounts.importFromFile')}</button>
+        <input type="file" accept=".json,application/json" id="acc-edit-import-file" style="display:none" />
+        <p class="ledger-meta" id="acc-edit-import-status" style="display:none"></p>
       </div>
       <div class="form-field" id="acc-edit-credit-limit-field" style="display:none">
         <label>${t('accounts.creditLimitLabel')}</label>
@@ -1101,6 +1106,35 @@ document.addEventListener('click', async (e) => {
     editTypeSelect.addEventListener('change', toggleEditLimitField);
     toggleEditLimitField();
 
+    // Reads a small { totalValue, asOf } JSON file (e.g. exported from
+    // another app tracking investments) and fills in the balance field for
+    // review — nothing is saved until the user hits Save themselves.
+    let importedAsOf = null;
+    document.getElementById('acc-edit-import-btn').addEventListener('click', () => {
+      document.getElementById('acc-edit-import-file').click();
+    });
+    document.getElementById('acc-edit-import-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      const statusEl = document.getElementById('acc-edit-import-status');
+      try {
+        const parsed = JSON.parse(await file.text());
+        const value = Number(parsed.totalValue);
+        if (!isFinite(value)) throw new Error('missing totalValue');
+        document.getElementById('acc-edit-balance').value = value.toFixed(2);
+        importedAsOf = typeof parsed.asOf === 'string' ? parsed.asOf : null;
+        statusEl.textContent = importedAsOf
+          ? t('accounts.importSuccessWithDate', { amt: formatMoney(value), date: formatUKDate(importedAsOf) })
+          : t('accounts.importSuccess', { amt: formatMoney(value) });
+        statusEl.style.display = '';
+      } catch (err) {
+        importedAsOf = null;
+        statusEl.textContent = t('accounts.importFailed');
+        statusEl.style.display = '';
+      }
+    });
+
     document.getElementById('acc-edit-cancel').addEventListener('click', closeModal);
     document.getElementById('acc-edit-save').addEventListener('click', async () => {
       const name = document.getElementById('acc-edit-name').value.trim();
@@ -1110,7 +1144,8 @@ document.addEventListener('click', async (e) => {
         type: editTypeSelect.value,
         balance: document.getElementById('acc-edit-balance').value,
         creditLimit: document.getElementById('acc-edit-credit-limit').value,
-        repaymentDueDay: document.getElementById('acc-edit-repayment-day').value
+        repaymentDueDay: document.getElementById('acc-edit-repayment-day').value,
+        balanceAsOf: importedAsOf
       });
       closeModal();
       refreshCurrentView();

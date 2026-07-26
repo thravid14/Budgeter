@@ -1,4 +1,4 @@
-const CACHE_NAME = 'budgeter-v37';
+const CACHE_NAME = 'budgeter-v38';
 
 const FILES_TO_CACHE = [
   './',
