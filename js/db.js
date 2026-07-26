@@ -125,19 +125,22 @@ async function deleteAccount(id) {
 // untouched and getAccountBalance() recomputes to the new figure everywhere
 // it's used (Dashboard, Net Worth, the by-account pie chart, Savings Goals,
 // Trends, Cash Flow Forecast) with no other code needing to change.
-// `balanceAsOf` (a date string) is set only when the balance came from an
-// imported file rather than being typed in by hand — shown on the account
-// card as "as of {date}" so a stale figure is obvious. Any edit that
-// doesn't explicitly pass a fresh balanceAsOf clears it, since a manual
-// change means the balance is current as of right now, not that old date.
-async function updateAccount(id, { name, type, balance, creditLimit, repaymentDueDay, balanceAsOf }) {
+// `balanceAsOf` (a date string) and `bookCost` (what was originally paid,
+// for a "+£X since cost" line) are set only when the balance came from an
+// imported file rather than being typed in by hand. Any edit that doesn't
+// explicitly pass fresh values clears both, since a manual change means
+// the balance is current as of right now, not tied to that old import —
+// showing a gain/loss line or an "as of" date computed against a balance
+// the import no longer relates to would be misleading either way.
+async function updateAccount(id, { name, type, balance, creditLimit, repaymentDueDay, balanceAsOf, bookCost }) {
   const account = await getAccount(id);
   if (!account) return;
   const patch = {
     name, type,
     creditLimit: creditLimit ? Number(creditLimit) : null,
     repaymentDueDay: repaymentDueDay ? Math.min(31, Math.max(1, Number(repaymentDueDay))) : null,
-    balanceAsOf: balanceAsOf || null
+    balanceAsOf: balanceAsOf || null,
+    bookCost: (bookCost !== undefined && bookCost !== null && bookCost !== '' && isFinite(Number(bookCost))) ? Number(bookCost) : null
   };
   if (balance !== undefined && balance !== null && balance !== '') {
     const currentBalance = await getAccountBalance(id);

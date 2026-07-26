@@ -672,6 +672,11 @@ async function renderAccounts() {
     const used = hasLimit ? Math.max(0, -balance) : 0;
     const available = hasLimit ? Math.max(0, a.creditLimit - used) : 0;
     const percent = hasLimit ? Math.min(100, (used / a.creditLimit) * 100) : 0;
+    // Computed live against the current balance (not a stored gain figure)
+    // so it self-corrects if the balance changes for any other reason —
+    // only bookCost, a stable "what was originally paid" fact, is stored.
+    const hasBookCost = a.bookCost !== null && a.bookCost !== undefined;
+    const gain = hasBookCost ? balance - a.bookCost : 0;
 
     return `
       <div class="account-card" data-id="${a.id}">
@@ -680,6 +685,7 @@ async function renderAccounts() {
         <div class="acc-name">${escapeHtml(a.name)}</div>
         <div class="acc-type">${accountTypeLabel(a.type)}</div>
         <div class="acc-balance">${formatMoney(balance)}</div>
+        ${hasBookCost ? `<div class="ledger-amount ${gain >= 0 ? 'income' : 'expense'}">${gain >= 0 ? t('accounts.gainSinceCost', { amt: formatMoney(gain) }) : t('accounts.lossSinceCost', { amt: formatMoney(Math.abs(gain)) })}</div>` : ''}
         ${a.balanceAsOf ? `<div class="ledger-meta">${t('accounts.balanceAsOf', { date: formatUKDate(a.balanceAsOf) })}</div>` : ''}
         ${hasLimit ? `
           <div class="breakdown-bar-track acc-credit-bar">

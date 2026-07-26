@@ -1106,10 +1106,13 @@ document.addEventListener('click', async (e) => {
     editTypeSelect.addEventListener('change', toggleEditLimitField);
     toggleEditLimitField();
 
-    // Reads a small { totalValue, asOf } JSON file (e.g. exported from
-    // another app tracking investments) and fills in the balance field for
-    // review — nothing is saved until the user hits Save themselves.
+    // Reads a small { totalValue, asOf, bookCost? } JSON file (e.g.
+    // exported from another app tracking investments) and fills in the
+    // balance field for review — nothing is saved until the user hits Save
+    // themselves. bookCost (optional) drives the "+£X since cost" line on
+    // the account card.
     let importedAsOf = null;
+    let importedBookCost = null;
     document.getElementById('acc-edit-import-btn').addEventListener('click', () => {
       document.getElementById('acc-edit-import-file').click();
     });
@@ -1124,12 +1127,14 @@ document.addEventListener('click', async (e) => {
         if (!isFinite(value)) throw new Error('missing totalValue');
         document.getElementById('acc-edit-balance').value = value.toFixed(2);
         importedAsOf = typeof parsed.asOf === 'string' ? parsed.asOf : null;
+        importedBookCost = isFinite(Number(parsed.bookCost)) ? Number(parsed.bookCost) : null;
         statusEl.textContent = importedAsOf
           ? t('accounts.importSuccessWithDate', { amt: formatMoney(value), date: formatUKDate(importedAsOf) })
           : t('accounts.importSuccess', { amt: formatMoney(value) });
         statusEl.style.display = '';
       } catch (err) {
         importedAsOf = null;
+        importedBookCost = null;
         statusEl.textContent = t('accounts.importFailed');
         statusEl.style.display = '';
       }
@@ -1145,7 +1150,8 @@ document.addEventListener('click', async (e) => {
         balance: document.getElementById('acc-edit-balance').value,
         creditLimit: document.getElementById('acc-edit-credit-limit').value,
         repaymentDueDay: document.getElementById('acc-edit-repayment-day').value,
-        balanceAsOf: importedAsOf
+        balanceAsOf: importedAsOf,
+        bookCost: importedBookCost
       });
       closeModal();
       refreshCurrentView();
