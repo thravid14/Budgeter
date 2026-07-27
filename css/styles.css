@@ -8,6 +8,7 @@
   --text-dim: #9CAB9E;
   --gold: #C9A227;
   --income: #5FB88A;
+  --income-rgb: 95, 184, 138;
   --expense: #C1543C;
 
   --font-display: 'Newsreader', Georgia, serif;
@@ -85,6 +86,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   --text-dim: #766F5C;
   --gold: #9C7419;
   --income: #2F7A50;
+  --income-rgb: 47, 122, 80;
   --expense: #A23D28;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
   --shadow-md: 0 6px 20px rgba(0,0,0,0.12);
@@ -241,9 +243,30 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   border-radius: var(--radius);
 }
 
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 26px 6px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  animation: emptyStateIn 0.4s var(--ease);
+}
+.empty-state-icon { font-size: 1.8rem; line-height: 1; opacity: 0.85; }
+.empty-state .empty-note { padding: 0; border: none; }
+@keyframes emptyStateIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== Category breakdown bars ===== */
 .breakdown-list { display: flex; flex-direction: column; gap: 12px; }
 .breakdown-row { display: flex; flex-direction: column; gap: 5px; }
+.breakdown-row.clickable {
+  cursor: pointer; border-radius: 6px; margin: -6px; padding: 6px;
+  transition: background-color 0.2s var(--ease), transform 0.15s var(--ease);
+}
+.breakdown-row.clickable:hover { background: var(--line); }
+.breakdown-row.clickable:active { transform: scale(0.98); }
+.breakdown-row.clickable:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .breakdown-top { display: flex; justify-content: space-between; font-size: 0.85rem; }
 .breakdown-bar-track { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
 .breakdown-bar-fill { height: 100%; background: var(--gold); transition: width 0.3s var(--ease); }
@@ -343,8 +366,22 @@ body.dragging-active { user-select: none; -webkit-user-select: none; }
 .networth-pie-legend-row { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; }
 .networth-pie-legend-row .ledger-meta { margin-left: auto; }
 .networth-pie-legend-row .ledger-amount { margin-left: auto; }
+.networth-pie-legend-row.clickable {
+  cursor: pointer; border-radius: 6px; padding: 4px 6px; margin: -4px -6px;
+  transition: background-color 0.2s var(--ease);
+}
+.networth-pie-legend-row.clickable:hover { background: var(--line); }
+.networth-pie-legend-row.clickable.active { background: var(--line); font-weight: 600; }
+.networth-pie-legend-row.clickable:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .networth-liabilities-label { margin: 14px 0 8px; }
-.donut-slice { transition: stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+.networth-account-detail {
+  max-height: 0; overflow: hidden; transition: max-height 0.3s var(--ease);
+}
+.networth-account-detail.expanded { margin: 2px 0 6px; }
+.networth-account-detail .ledger-row { padding: 6px 0; font-size: 0.85rem; }
+.networth-detail-viewall { margin-top: 4px; }
+.donut-slice { transition: stroke-dasharray 0.7s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s var(--ease); cursor: pointer; }
+.donut-slice.dimmed { opacity: 0.3; }
 
 /* ===== Budgets ===== */
 .budget-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
@@ -352,6 +389,12 @@ body.dragging-active { user-select: none; -webkit-user-select: none; }
 .budget-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
 .budget-actions { display: flex; gap: 6px; }
 .budget-rollover-note { margin: 6px 0 0; }
+.budget-card.just-achieved { animation: goalAchievedGlow 1.1s var(--ease); }
+@keyframes goalAchievedGlow {
+  0% { box-shadow: 0 0 0 0 rgba(var(--income-rgb), 0.5); transform: scale(1); }
+  30% { box-shadow: 0 0 0 8px rgba(var(--income-rgb), 0); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(var(--income-rgb), 0); transform: scale(1); }
+}
 
 /* ===== Buttons ===== */
 .btn-primary {
@@ -367,6 +410,15 @@ body.dragging-active { user-select: none; -webkit-user-select: none; }
 }
 .btn-primary:hover { filter: brightness(1.08); }
 .btn-primary:active { transform: scale(0.98); }
+.btn-primary.success-pulse {
+  background: var(--income); color: #fff;
+  animation: successPulse 0.4s var(--ease);
+}
+@keyframes successPulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
 
 .btn-secondary {
   background: transparent;

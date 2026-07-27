@@ -40,6 +40,15 @@ function formatUKDateTime(dateOrMs) {
   return `${datePart}, ${timePart}`;
 }
 
+// A slightly richer "nothing here yet" block — a soft icon above the
+// existing message, replacing what used to be plain grey text everywhere
+// a list or chart has nothing to show. Fades/lifts in on its own each time
+// it's rendered (CSS `animation`, not `transition`, so it needs no "before"
+// state — it just plays whenever this markup is freshly inserted).
+function emptyState(icon, message) {
+  return `<div class="empty-state"><span class="empty-state-icon" aria-hidden="true">${icon}</span><p class="empty-note">${message}</p></div>`;
+}
+
 function currentMonthStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -72,6 +81,11 @@ function renderSparkline(values, width, height) {
 // Previous Dashboard stat figures, so animateMoneyValue knows what to count
 // up/down from on the next render. Starts at null (no animation on first load).
 let dashboardStatCache = { balance: null, income: null, expense: null };
+
+// Set just before switching to Transactions from a click on a Dashboard
+// category bar; renderTransactions() picks this up once and clears it, so
+// visiting Transactions normally afterward doesn't keep re-applying it.
+let pendingTxFilter = null;
 
 function renderCreditCardReminders(reminders) {
   const banner = document.getElementById('credit-reminder-banner');
@@ -123,11 +137,11 @@ async function renderDashboard() {
 
   const breakdownEl = document.getElementById('category-breakdown');
   if (breakdown.length === 0) {
-    breakdownEl.innerHTML = `<p class="empty-note">${t('dashboard.emptyBreakdown')}</p>`;
+    breakdownEl.innerHTML = emptyState('📊', t('dashboard.emptyBreakdown'));
   } else {
     const max = breakdown[0].total;
     breakdownEl.innerHTML = breakdown.map(row => `
-      <div class="breakdown-row">
+      <div class="breakdown-row clickable" data-action="filter-by-category" data-category-id="${row.category.id}" data-month="${month}" role="button" tabindex="0">
         <div class="breakdown-top">
           <span>${escapeHtml(row.category.name)}</span>
           <span>${formatMoney(row.total)}</span>
@@ -157,7 +171,7 @@ function renderCashFlowForecast(forecast) {
 
   if (forecast.events.length === 0) {
     lowestEl.style.display = 'none';
-    listEl.innerHTML = `<p class="empty-note">${t('dashboard.cashFlowEmpty')}</p>`;
+    listEl.innerHTML = emptyState('📈', t('dashboard.cashFlowEmpty'));
     return;
   }
 
@@ -197,6 +211,13 @@ async function renderTransactions() {
   catSelect.innerHTML = `<option value="">${t('transactions.allCategories')}</option>` +
     categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
 
+  if (pendingTxFilter) {
+    if (pendingTxFilter.categoryId !== undefined) catSelect.value = pendingTxFilter.categoryId;
+    if (pendingTxFilter.accountId !== undefined) accSelect.value = pendingTxFilter.accountId;
+    if (pendingTxFilter.month !== undefined) document.getElementById('filter-month').value = pendingTxFilter.month;
+    pendingTxFilter = null;
+  }
+
   applyTransactionFilters(txs, transfers, categories, accounts);
 }
 
@@ -222,7 +243,7 @@ function applyTransactionFilters(allTx, allTransfers, categories, accounts) {
 
 function renderLedgerRows(entries, categories, accounts, withActions) {
   if (entries.length === 0) {
-    return `<p class="empty-note">${t('transactions.empty')}</p>`;
+    return emptyState('🧾', t('transactions.empty'));
   }
   return entries.map(entry => {
     if (entry.entryType === 'transfer') {
@@ -288,7 +309,7 @@ async function renderBills() {
 // Shared bill renderer — used by both the dashboard's "upcoming" list and the full Bills page.
 function renderBillRows(bills, categories, withActions) {
   if (bills.length === 0) {
-    return `<p class="empty-note">${t('bills.empty')}</p>`;
+    return emptyState('📆', t('bills.empty'));
   }
   return bills.map(b => {
     const cat = categories.find(c => c.id === b.categoryId);
@@ -337,7 +358,7 @@ async function renderStandingOrders() {
 // a transaction — no need for a separate, duplicate set of i18n keys.
 function renderStandingOrderRows(standingOrders, accounts, withActions) {
   if (standingOrders.length === 0) {
-    return `<p class="empty-note">${t('standingOrders.empty')}</p>`;
+    return emptyState('🔁', t('standingOrders.empty'));
   }
   const month = currentMonthStr();
   return standingOrders.map(so => {
@@ -378,7 +399,7 @@ async function renderBudgets() {
 
   const el = document.getElementById('budget-list');
   if (budgets.length === 0) {
-    el.innerHTML = `<p class="empty-note">${t('budgets.empty')}</p>`;
+    el.innerHTML = emptyState('🎯', t('budgets.empty'));
     return;
   }
   el.innerHTML = budgets.map(b => `
@@ -404,15 +425,29 @@ async function renderBudgets() {
 
 /* ---------------- Savings Goals page ---------------- */
 
+// Which goals just crossed into "achieved" get a one-off celebration
+// (glow animation here + a toast from app.js, which calls this and shows
+// the toast for whatever this returns). "Just" is tracked with a persisted
+// `celebrated` flag on the goal record itself, not an in-memory variable —
+// an in-memory flag resets on every fresh app open, which would replay the
+// celebration for a goal achieved weeks ago every single time the page is
+// visited. The flag clears itself if the goal later drops back below
+// target, so a genuine second achievement still gets celebrated.
 async function renderSavingsGoals() {
   const goals = await getSavingsGoalsWithProgress();
   const el = document.getElementById('savingsgoal-list');
   if (goals.length === 0) {
-    el.innerHTML = `<p class="empty-note">${t('savingsGoals.empty')}</p>`;
-    return;
+    el.innerHTML = emptyState('🏆', t('savingsGoals.empty'));
+    return [];
   }
+
+  const justAchieved = goals.filter(g => g.achieved && !g.celebrated);
+  await Promise.all(goals
+    .filter(g => g.achieved !== !!g.celebrated)
+    .map(g => setSavingsGoalCelebrated(g.id, g.achieved)));
+
   el.innerHTML = goals.map(g => `
-    <div class="panel budget-card" data-id="${g.id}">
+    <div class="panel budget-card ${justAchieved.some(j => j.id === g.id) ? 'just-achieved' : ''}" data-id="${g.id}">
       <div class="breakdown-top">
         <span>${escapeHtml(g.name)}</span>
         <span>${formatMoney(g.current)} ${t('budgets.of')} ${formatMoney(g.targetAmount)}</span>
@@ -427,6 +462,8 @@ async function renderSavingsGoals() {
       </div>
     </div>
   `).join('');
+
+  return justAchieved;
 }
 
 /* ---------------- Trends page ---------------- */
@@ -445,7 +482,7 @@ async function renderTrends() {
   const max = Math.max(1, ...months.map(m => Math.max(m.income, m.expense)));
 
   if (months.every(m => m.income === 0 && m.expense === 0)) {
-    chartEl.innerHTML = `<p class="empty-note">${t('trends.empty')}</p>`;
+    chartEl.innerHTML = emptyState('📉', t('trends.empty'));
   } else {
     chartEl.innerHTML = months.map(m => `
       <div class="trend-month">
@@ -492,7 +529,8 @@ function renderDonutChart(slices, size, strokeWidth) {
   const circles = slices.map(s => {
     const dash = (s.value / total) * circumference;
     const gap = circumference - dash;
-    const circle = `<circle class="donut-slice" data-dash="${dash}" data-gap="${gap}" cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="0 ${circumference}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${center} ${center})"></circle>`;
+    const idAttr = s.id !== undefined ? ` data-action="toggle-account-detail" data-account-id="${s.id}"` : '';
+    const circle = `<circle class="donut-slice"${idAttr} data-dash="${dash}" data-gap="${gap}" cx="${center}" cy="${center}" r="${radius}" fill="none" stroke="${s.color}" stroke-width="${strokeWidth}" stroke-dasharray="0 ${circumference}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${center} ${center})"></circle>`;
     offset += dash;
     return circle;
   }).join('');
@@ -520,18 +558,19 @@ function renderNetWorthPie({ assets, liabilities }) {
 
   if (assets.length === 0) {
     pieEl.innerHTML = '';
-    legendEl.innerHTML = `<p class="empty-note">${t('networth.pieEmpty')}</p>`;
+    legendEl.innerHTML = emptyState('🥧', t('networth.pieEmpty'));
   } else {
     const total = assets.reduce((sum, a) => sum + a.balance, 0);
-    const slices = assets.map((a, i) => ({ name: a.name, value: a.balance, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }));
+    const slices = assets.map((a, i) => ({ id: a.id, name: a.name, value: a.balance, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }));
     pieEl.innerHTML = renderDonutChart(slices, 140, 26);
     animateDonutChart(pieEl);
     legendEl.innerHTML = slices.map(s => `
-      <div class="networth-pie-legend-row">
+      <div class="networth-pie-legend-row clickable" data-action="toggle-account-detail" data-account-id="${s.id}" role="button" tabindex="0">
         <span class="tag-dot" style="background:${s.color}"></span>
         <span>${escapeHtml(s.name)}</span>
         <span class="ledger-meta">${formatMoney(s.value)} · ${Math.round((s.value / total) * 100)}%</span>
       </div>
+      <div class="networth-account-detail" id="networth-detail-${s.id}"></div>
     `).join('');
   }
 
@@ -546,6 +585,63 @@ function renderNetWorthPie({ assets, liabilities }) {
         </div>
       `).join('');
   }
+}
+
+// Dims every donut slice except the one for `accountId` (null clears the
+// dimming entirely) — a visual thread tying the legend row you clicked back
+// to its slice, since the donut itself has no labels.
+function setActiveAccountSlice(accountId) {
+  document.querySelectorAll('.donut-slice').forEach(circle => {
+    circle.classList.toggle('dimmed', accountId !== null && circle.dataset.accountId !== String(accountId));
+  });
+}
+
+function closeAccountDetailPanel(panel) {
+  panel.style.maxHeight = '0px';
+  panel.classList.remove('expanded');
+  const id = panel.id.replace('networth-detail-', '');
+  const row = document.querySelector(`.networth-pie-legend-row[data-account-id="${id}"]`);
+  if (row) row.classList.remove('active');
+}
+
+// Click-to-expand on a Net Worth pie legend row (or its donut slice, same
+// data-action): shows that account's last few transactions inline, right
+// where you clicked, rather than sending you off to the Transactions page
+// for a quick "what's in here" check. Only one panel open at a time.
+async function toggleAccountDetail(accountId) {
+  const panel = document.getElementById(`networth-detail-${accountId}`);
+  if (!panel) return;
+  const wasOpen = panel.classList.contains('expanded');
+
+  document.querySelectorAll('.networth-account-detail.expanded').forEach(el => {
+    if (el !== panel) closeAccountDetailPanel(el);
+  });
+
+  if (wasOpen) {
+    closeAccountDetailPanel(panel);
+    setActiveAccountSlice(null);
+    return;
+  }
+
+  document.querySelectorAll('.networth-pie-legend-row.active').forEach(el => el.classList.remove('active'));
+  const legendRow = document.querySelector(`.networth-pie-legend-row[data-account-id="${accountId}"]`);
+  if (legendRow) legendRow.classList.add('active');
+  setActiveAccountSlice(accountId);
+
+  const [txs, transfers, categories, accounts] = await Promise.all([
+    getTransactions(), getTransfers(), getCategories(), getAccounts()
+  ]);
+  const entries = combineLedgerEntries(txs, transfers)
+    .filter(e => e.entryType === 'transaction' ? e.accountId === accountId : (e.fromAccountId === accountId || e.toAccountId === accountId))
+    .slice(0, 5);
+
+  panel.innerHTML = (entries.length
+    ? renderLedgerRows(entries, categories, accounts, false)
+    : `<p class="empty-note">${t('networth.noAccountTransactions')}</p>`
+  ) + `<button class="btn-secondary btn-sm networth-detail-viewall" data-action="view-account-transactions" data-account-id="${accountId}">${t('networth.viewAllTransactions')}</button>`;
+
+  panel.classList.add('expanded');
+  panel.style.maxHeight = `${panel.scrollHeight}px`;
 }
 
 async function renderNetWorth() {
@@ -569,7 +665,7 @@ async function renderNetWorth() {
   const isFlat = !isEmpty && new Set(history.map(h => h.netWorth)).size === 1;
 
   if (isEmpty) {
-    chartEl.innerHTML = `<p class="empty-note">${t('networth.empty')}</p>`;
+    chartEl.innerHTML = emptyState('💰', t('networth.empty'));
     flatNoteEl.style.display = 'none';
   } else {
     chartEl.innerHTML = history.map(h => `
@@ -604,7 +700,7 @@ async function renderCategories() {
   const categories = await getCategories();
   const el = document.getElementById('category-list');
   if (categories.length === 0) {
-    el.innerHTML = `<p class="empty-note">${t('categories.empty')}</p>`;
+    el.innerHTML = emptyState('🏷️', t('categories.empty'));
     return;
   }
   el.innerHTML = categories.map(c => `
@@ -668,7 +764,7 @@ async function renderAccounts() {
   const accounts = orderAccounts(await getAccounts());
   const el = document.getElementById('account-list');
   if (accounts.length === 0) {
-    el.innerHTML = `<p class="empty-note">${t('accounts.empty')}</p>`;
+    el.innerHTML = emptyState('🏦', t('accounts.empty'));
     return;
   }
   const cards = await Promise.all(accounts.map(async a => {

@@ -253,7 +253,10 @@ async function refreshCurrentView() {
   if (currentView === 'bills') await renderBills();
   if (currentView === 'standingorders') await renderStandingOrders();
   if (currentView === 'budgets') await renderBudgets();
-  if (currentView === 'savingsgoals') await renderSavingsGoals();
+  if (currentView === 'savingsgoals') {
+    const justAchieved = await renderSavingsGoals();
+    justAchieved.forEach(g => showToast(t('savingsGoals.achievedToast', { name: g.name })));
+  }
   if (currentView === 'trends') await renderTrends();
   if (currentView === 'networth') await renderNetWorth();
   if (currentView === 'categories') await renderCategories();
@@ -307,6 +310,17 @@ function showToast(message) {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
   }, 2500);
+}
+
+// Brief "✓ Paid!" swap + pulse on the button that was just clicked, so
+// marking a bill paid feels immediate — the actual re-render (which may
+// move or remove this exact button, e.g. it drops off the Dashboard's
+// Upcoming bills list once paid) is deliberately delayed a moment so this
+// gets to play out first instead of being wiped out mid-animation.
+function playPaidFeedback(btn) {
+  btn.textContent = `✓ ${t('bills.paid')}`;
+  btn.disabled = true;
+  btn.classList.add('success-pulse');
 }
 
 /* ---------------- Share ---------------- */
@@ -1068,11 +1082,37 @@ document.getElementById('btn-add-savingsgoal').addEventListener('click', async (
 
 /* ---------------- Delete / pay / unpay actions (event delegation) ---------------- */
 
+// The category breakdown rows on the Dashboard and the Net Worth pie's
+// legend rows act like buttons (role="button") but are <div>s for layout
+// reasons, so Enter/Space needs wiring up by hand — a real <button> gets
+// this for free, a div with a click listener doesn't.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const row = e.target.closest('[data-action="filter-by-category"], [data-action="toggle-account-detail"]');
+  if (!row) return;
+  e.preventDefault();
+  row.click();
+});
+
 document.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const id = Number(btn.dataset.id);
 
+  if (btn.dataset.action === 'filter-by-category') {
+    pendingTxFilter = { categoryId: btn.dataset.categoryId, month: btn.dataset.month };
+    switchView('transactions');
+    return;
+  }
+  if (btn.dataset.action === 'toggle-account-detail') {
+    await toggleAccountDetail(Number(btn.dataset.accountId));
+    return;
+  }
+  if (btn.dataset.action === 'view-account-transactions') {
+    pendingTxFilter = { accountId: btn.dataset.accountId };
+    switchView('transactions');
+    return;
+  }
   if (btn.dataset.action === 'delete-tx') {
     if (confirm('Delete this transaction?')) { await deleteTransaction(id); refreshCurrentView(); showToast(t('toast.transactionDeleted')); }
   }
@@ -1216,8 +1256,9 @@ document.addEventListener('click', async (e) => {
   if (btn.dataset.action === 'pay-bill') {
     const today = new Date().toISOString().slice(0, 10);
     await markBillPaid(id, today);
-    refreshCurrentView();
+    playPaidFeedback(btn);
     showToast(t('toast.billPaid'));
+    setTimeout(refreshCurrentView, 350);
   }
   if (btn.dataset.action === 'unpay-bill') {
     const txId = Number(btn.dataset.txId);

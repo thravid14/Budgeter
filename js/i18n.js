@@ -115,7 +115,8 @@ const translations = {
     savingsGoals: {
       title: 'Savings Goals', sub: 'Target amount tied to one of your accounts', addGoal: '+ Add goal',
       empty: 'No savings goals yet. Set a target amount for an account, like an ISA deposit target.',
-      byDate: 'by {date}', reached: 'Goal reached', remaining: '{amt} to go'
+      byDate: 'by {date}', reached: 'Goal reached', remaining: '{amt} to go',
+      achievedToast: '🎉 Goal reached: {name}!'
     },
     trends: {
       title: 'Trends', sub: 'Income vs expenses, last 6 months',
@@ -129,7 +130,9 @@ const translations = {
       empty: 'Add an account to start tracking net worth.',
       flatDataNote: "Showing the same figure across every month usually just means there isn't much dated transaction history yet — this fills in and starts showing real month-to-month change as you keep using Budgeter.",
       byAccount: 'By account', pieEmpty: 'No accounts with a positive balance yet.',
-      liabilitiesListLabel: 'Debts (not shown in the chart above)'
+      liabilitiesListLabel: 'Debts (not shown in the chart above)',
+      noAccountTransactions: 'No transactions on this account yet.',
+      viewAllTransactions: 'View all in Transactions'
     },
     categories: {
       title: 'Categories', addCategory: '+ Add category', addStarter: '+ Add starter categories',
@@ -329,7 +332,8 @@ const translations = {
     savingsGoals: {
       title: 'Metas de ahorro', sub: 'Importe objetivo vinculado a una de tus cuentas', addGoal: '+ Añadir meta',
       empty: 'Aún no hay metas de ahorro. Establece un importe objetivo para una cuenta, como un objetivo de depósito ISA.',
-      byDate: 'para el {date}', reached: 'Meta alcanzada', remaining: '{amt} restante'
+      byDate: 'para el {date}', reached: 'Meta alcanzada', remaining: '{amt} restante',
+      achievedToast: '🎉 ¡Meta alcanzada: {name}!'
     },
     trends: {
       title: 'Tendencias', sub: 'Ingresos frente a gastos, últimos 6 meses',
@@ -343,7 +347,9 @@ const translations = {
       empty: 'Añade una cuenta para empezar a seguir tu patrimonio neto.',
       flatDataNote: 'Mostrar la misma cifra en todos los meses normalmente solo significa que aún no hay mucho historial de transacciones con fecha — esto se irá completando y mostrará cambios reales mes a mes a medida que sigas usando Budgeter.',
       byAccount: 'Por cuenta', pieEmpty: 'Aún no hay cuentas con saldo positivo.',
-      liabilitiesListLabel: 'Deudas (no se muestran en el gráfico anterior)'
+      liabilitiesListLabel: 'Deudas (no se muestran en el gráfico anterior)',
+      noAccountTransactions: 'Aún no hay transacciones en esta cuenta.',
+      viewAllTransactions: 'Ver todas en Transacciones'
     },
     categories: {
       title: 'Categorías', addCategory: '+ Añadir categoría', addStarter: '+ Añadir categorías iniciales',

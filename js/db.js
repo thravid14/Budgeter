@@ -616,6 +616,15 @@ async function deleteSavingsGoal(id) {
   return db.savingsGoals.delete(id);
 }
 
+// Records that a goal's "just reached your target" celebration has already
+// played, so re-visiting the page doesn't replay it every time — persisted
+// (not just an in-memory flag) so it survives closing and reopening the
+// app. Cleared back to false once the goal drops below target again (e.g.
+// money's withdrawn), so a genuine second achievement still celebrates.
+async function setSavingsGoalCelebrated(id, celebrated) {
+  return db.savingsGoals.update(id, { celebrated: !!celebrated });
+}
+
 // Returns goals with computed current balance/remaining/percent/achieved,
 // combining the balances of every linked account. Goals saved before
 // multi-account support (a single accountId, no accountIds) still work —
