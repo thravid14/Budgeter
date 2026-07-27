@@ -1,8 +1,10 @@
 # Budgeter — What's Built (plain-language log)
 
-*Last updated: 20 July 2026 — fixing real-world usage reports as they come in.*
+*Last updated: 27 July 2026 — fixing real-world usage reports as they come in.*
 
 ## Post-launch fixes (found during real usage)
+
+- **Bills can now repeat Weekly, not just Monthly.** When adding a bill, pick how often it repeats — Monthly works exactly as before (a day of the month, 1-31); Weekly is new, and lets you pick a day of the week instead (e.g. every Monday for a cleaner, or every Thursday for a class), so it comes round every single week rather than once a month. Everything that already worked for monthly bills — automatic payment on the due date, the Undo button, the Cash Flow Forecast, and the subscription total — now correctly understands weekly ones too: the forecast walks forward week by week so it can show several upcoming occurrences within its 30-day window (not just one), and a weekly subscription's cost is converted to a monthly-equivalent (×52÷12) so the running subscription total stays meaningful next to monthly ones. Undo was also quietly made more precise for this: it now removes the exact payment you undid rather than everything dated that month, which matters once a bill can be paid more than once a month.
 
 - **Fixed a real bug that could duplicate a bill payment or standing order transfer.** Bills and Standing Orders auto-pay themselves by checking "has this already happened this month?" every time you switch tabs. If you switched tabs fast enough, two of those checks could overlap — both would see "not paid yet" before either had finished recording it, and both would go ahead and pay it, creating two payments instead of one. Fixed so only one can run at a time. This is the most likely explanation if an account's balance ever looked higher (or lower) than expected despite everything looking correct — it would show up as a bill or standing order transfer appearing twice on the same date. If you spot one, delete the duplicate entry (or use Undo if it's still this month) and the balance corrects itself immediately, since nothing is ever cached — it's always worked out fresh from your transaction/transfer history.
 

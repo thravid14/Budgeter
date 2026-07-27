@@ -322,20 +322,54 @@ async function runAutoPayStandingOrders() {
 }
 
 /* ---------------- Bills (recurring expenses) ----------------
-   A "bill" is a template (Rent, Netflix, etc). Each month, it's either
+   A "bill" is a template (Rent, Netflix, etc). Each period, it's either
    unpaid, or has an actual transaction logged against it (paid).
    We don't store "paid" as a flag on the bill itself — instead we check
-   whether a transaction with this billId exists in the given month.
+   whether a transaction with this billId exists in the given period.
    That keeps bills and transactions as the single source of truth.
+
+   Two frequencies: 'monthly' (default, unchanged — a day-of-month 1-31,
+   one occurrence per calendar month) and 'weekly' (a day-of-week 0-6,
+   same numbering as Date.getDay(): 0=Sunday...6=Saturday — one
+   occurrence every calendar week, Monday-Sunday). A weekly bill can have
+   more than one occurrence within a single month, so it can't be matched
+   to "paid" by month the way a monthly one is — it's matched by falling
+   within the current Mon-Sun week instead.
 */
 
-async function addBill({ name, amount, categoryId, accountId, dueDay, isSubscription }) {
+// Monday 00:00 of the week containing `date`.
+function mondayOfWeek(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay(); // 0=Sun..6=Sat
+  d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+  return d;
+}
+
+function dateToStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// This calendar week's occurrence of a weekly bill due on `dueWeekday`
+// (0=Sun..6=Sat), for the week containing `today`.
+function weeklyDueDateThisWeek(dueWeekday, today) {
+  const monday = mondayOfWeek(today);
+  const offset = (Number(dueWeekday) - 1 + 7) % 7; // days after Monday
+  const due = new Date(monday);
+  due.setDate(due.getDate() + offset);
+  return due;
+}
+
+async function addBill({ name, amount, categoryId, accountId, dueDay, dueWeekday, frequency, isSubscription }) {
+  const freq = frequency === 'weekly' ? 'weekly' : 'monthly';
   return db.bills.add({
     name,
     amount: Number(amount) || 0,
     categoryId: Number(categoryId),
     accountId: Number(accountId),
-    dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)),
+    frequency: freq,
+    dueDay: freq === 'monthly' ? Math.min(31, Math.max(1, Number(dueDay) || 1)) : null,
+    dueWeekday: freq === 'weekly' ? Math.min(6, Math.max(0, Number(dueWeekday) || 0)) : null,
     isSubscription: !!isSubscription
   });
 }
@@ -375,22 +409,14 @@ async function markBillPaid(billId, dateStr) {
   });
 }
 
-// Un-marks a bill as paid for a given month by deleting the transaction(s) that recorded it.
-async function markBillUnpaid(billId, monthStr) {
-  const txs = await db.transactions.where('billId').equals(billId).toArray();
-  const inMonth = txs.filter(t => t.date.startsWith(monthStr));
-  for (const t of inMonth) {
-    await db.transactions.delete(t.id);
-  }
-}
-
-// Auto-pays any bill whose due date (this month) has arrived and hasn't
+// Auto-pays any bill whose due date (this period) has arrived and hasn't
 // already been paid — creates the same transaction markBillPaid() would,
 // dated on the actual due date (not today), so records stay accurate even
 // if the app wasn't opened until a few days after the bill was due.
 // Idempotent: safe to call on every page load, since it only acts on bills
-// that are still unpaid. Only looks at the CURRENT month — it doesn't
-// retroactively pay bills from months the app was never opened.
+// that are still unpaid. Only looks at the CURRENT period (this month for
+// a monthly bill, this Mon-Sun week for a weekly one) — it doesn't
+// retroactively pay bills from periods the app was never opened.
 // Note: this can only run while the app is actually open (there's no
 // background process in a browser app), so "automatic" means "the next
 // time you open the app on or after the due date", not literally at
@@ -413,17 +439,27 @@ async function runAutoPayBills() {
     const month = today.getMonth() + 1;
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     const daysInMonth = new Date(year, month, 0).getDate();
+    const monday = mondayOfWeek(today);
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+    const weekStartStr = dateToStr(monday), weekEndStr = dateToStr(sunday);
 
     const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);
     const justPaid = [];
 
     for (const bill of bills) {
-      const day = Math.min(bill.dueDay, daysInMonth);
-      const dueDate = new Date(year, month - 1, day);
-      const alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
+      let dueDate, alreadyPaid, dueDateStr;
+      if (bill.frequency === 'weekly') {
+        dueDate = weeklyDueDateThisWeek(bill.dueWeekday, today);
+        alreadyPaid = txs.some(t => t.billId === bill.id && t.date >= weekStartStr && t.date <= weekEndStr);
+        dueDateStr = dateToStr(dueDate);
+      } else {
+        const day = Math.min(bill.dueDay, daysInMonth);
+        dueDate = new Date(year, month - 1, day);
+        alreadyPaid = txs.some(t => t.billId === bill.id && t.date.startsWith(monthStr));
+        dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
       if (alreadyPaid || dueDate > today) continue;
 
-      const dueDateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       await markBillPaid(bill.id, dueDateStr);
       justPaid.push(bill);
     }
@@ -434,17 +470,29 @@ async function runAutoPayBills() {
 }
 
 // Returns bills with computed status for a given month: paid/unpaid, due date, days until due.
+// Weekly bills ignore monthStr for the period itself (they're always shown
+// against the current Mon-Sun week, since there's no month-by-month
+// navigation for Bills) but are still included in the same list.
 async function getBillsWithStatus(monthStr) {
   const [bills, txs] = await Promise.all([getBills(), db.transactions.toArray()]);
   const [year, month] = monthStr.split('-').map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const monday = mondayOfWeek(today);
+  const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+  const weekStartStr = dateToStr(monday), weekEndStr = dateToStr(sunday);
+  const msPerDay = 1000 * 60 * 60 * 24;
 
   return bills.map(bill => {
-    const day = Math.min(bill.dueDay, daysInMonth);
-    const dueDate = new Date(year, month - 1, day);
-    const paidTx = txs.find(t => t.billId === bill.id && t.date.startsWith(monthStr));
-    const msPerDay = 1000 * 60 * 60 * 24;
+    let dueDate, paidTx;
+    if (bill.frequency === 'weekly') {
+      dueDate = weeklyDueDateThisWeek(bill.dueWeekday, today);
+      paidTx = txs.find(t => t.billId === bill.id && t.date >= weekStartStr && t.date <= weekEndStr);
+    } else {
+      const day = Math.min(bill.dueDay, daysInMonth);
+      dueDate = new Date(year, month - 1, day);
+      paidTx = txs.find(t => t.billId === bill.id && t.date.startsWith(monthStr));
+    }
     const daysUntilDue = Math.round((dueDate - today) / msPerDay);
 
     let status;
@@ -687,6 +735,7 @@ async function getCashFlowForecast(days) {
     const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
 
     for (const bill of bills) {
+      if (bill.frequency === 'weekly') continue;
       const day = Math.min(bill.dueDay, daysInMonth);
       const dueDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
       if (dueDate < today || dueDate > endDate) continue;
@@ -696,6 +745,29 @@ async function getCashFlowForecast(days) {
 
       const dueDateStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       events.push({ date: dueDateStr, name: bill.name, amount: bill.amount });
+    }
+  }
+
+  // Weekly bills can recur several times within the window, so instead of
+  // month buckets they're walked week by week from the current Mon-Sun week
+  // through to endDate, checking each week independently for a paid tx.
+  for (const bill of bills.filter(b => b.frequency === 'weekly')) {
+    let weekMonday = mondayOfWeek(today);
+    while (weekMonday <= endDate) {
+      const offset = (Number(bill.dueWeekday) - 1 + 7) % 7;
+      const dueDate = new Date(weekMonday);
+      dueDate.setDate(dueDate.getDate() + offset);
+
+      if (dueDate >= today && dueDate <= endDate) {
+        const weekEnd = new Date(weekMonday); weekEnd.setDate(weekEnd.getDate() + 6);
+        const wStartStr = dateToStr(weekMonday), wEndStr = dateToStr(weekEnd);
+        const alreadyPaid = txs.some(t => t.billId === bill.id && t.date >= wStartStr && t.date <= wEndStr);
+        if (!alreadyPaid) {
+          events.push({ date: dateToStr(dueDate), name: bill.name, amount: bill.amount });
+        }
+      }
+      weekMonday = new Date(weekMonday);
+      weekMonday.setDate(weekMonday.getDate() + 7);
     }
   }
 

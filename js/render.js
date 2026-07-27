@@ -273,7 +273,9 @@ async function renderBills() {
     showSubscriptionsOnly = false;
   } else {
     subBar.style.display = '';
-    const subTotal = subs.reduce((sum, b) => sum + b.amount, 0);
+    // Weekly subscriptions are normalized to a monthly-equivalent (52 weeks
+    // a year / 12 months) so the total isn't understated next to monthly ones.
+    const subTotal = subs.reduce((sum, b) => sum + (b.frequency === 'weekly' ? b.amount * 52 / 12 : b.amount), 0);
     document.getElementById('subscription-total-label').textContent =
       t('bills.subscriptionTotal', { amt: formatMoney(subTotal), count: subs.length });
     document.getElementById('subscription-filter-toggle').checked = showSubscriptionsOnly;
@@ -288,7 +290,6 @@ function renderBillRows(bills, categories, withActions) {
   if (bills.length === 0) {
     return `<p class="empty-note">${t('bills.empty')}</p>`;
   }
-  const month = currentMonthStr();
   return bills.map(b => {
     const cat = categories.find(c => c.id === b.categoryId);
     let statusLabel, statusClass;
@@ -297,18 +298,22 @@ function renderBillRows(bills, categories, withActions) {
     else if (b.daysUntilDue === 0) { statusLabel = t('bills.dueToday'); statusClass = 'due-soon'; }
     else { statusLabel = t('bills.dueIn', { n: b.daysUntilDue }); statusClass = b.daysUntilDue <= 3 ? 'due-soon' : 'upcoming'; }
 
+    const dueLabel = b.frequency === 'weekly'
+      ? t('bills.dueWeekdayLabel', { day: t(`weekdays.${b.dueWeekday}`) })
+      : t('bills.dueDayLabel', { n: b.dueDay });
+
     return `
       <div class="bill-row" data-id="${b.id}">
         <div class="ledger-desc">
           <span class="ledger-name">${escapeHtml(b.name)}${b.isSubscription ? `<span class="subscription-tag">${t('bills.subscriptionBadge')}</span>` : ''}</span>
-          <span class="ledger-meta">${cat ? escapeHtml(cat.name) : '—'} · ${t('bills.dueDayLabel', { n: b.dueDay })}</span>
+          <span class="ledger-meta">${cat ? escapeHtml(cat.name) : '—'} · ${dueLabel}</span>
         </div>
         <span class="ledger-leader"></span>
         <span class="bill-status ${statusClass}">${statusLabel}</span>
         <span class="ledger-amount expense">-${formatMoney(b.amount)}</span>
         <div class="row-actions">
           ${b.status === 'paid'
-            ? `<button class="btn-secondary btn-sm" data-action="unpay-bill" data-id="${b.id}" data-month="${month}">${t('bills.undo')}</button>`
+            ? `<button class="btn-secondary btn-sm" data-action="unpay-bill" data-id="${b.id}" data-tx-id="${b.paidTx.id}">${t('bills.undo')}</button>`
             : `<button class="btn-primary btn-sm" data-action="pay-bill" data-id="${b.id}">${t('bills.markPaid')}</button>`}
           ${withActions ? `<button class="btn-secondary btn-sm ${b.isSubscription ? 'active' : ''}" data-action="toggle-bill-subscription" data-id="${b.id}" data-next="${b.isSubscription ? '0' : '1'}" title="${b.isSubscription ? t('bills.subscriptionOnHint') : t('bills.subscriptionOffHint')}">${t('bills.subscriptionToggle')}</button>` : ''}
           ${withActions ? `<button class="icon-btn danger" data-action="delete-bill" data-id="${b.id}" aria-label="Delete">✕</button>` : ''}

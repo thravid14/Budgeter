@@ -85,12 +85,17 @@ const translations = {
       empty: "No bills yet. Add rent, subscriptions, or utilities to track what's due.",
       paid: 'Paid', overdue: 'Overdue {n}d', dueToday: 'Due today', dueIn: 'Due in {n}d',
       markPaid: 'Mark paid', undo: 'Undo', dueDayLabel: 'due day {n}',
+      dueWeekdayLabel: 'due {day}', frequencyLabel: 'Repeats', frequencyMonthly: 'Monthly',
+      frequencyWeekly: 'Weekly', dueWeekdaySelectLabel: 'Due day of week',
       subscriptionCheckbox: 'This is a subscription (Netflix, Spotify, gym, etc.)',
       subscriptionBadge: 'Subscription',
       subscriptionToggle: 'Sub', subscriptionOnHint: 'Tagged as a subscription — click to untag',
       subscriptionOffHint: 'Not tagged as a subscription — click to tag',
       subscriptionsOnly: 'Show subscriptions only',
       subscriptionTotal: '{count} subscriptions · {amt}/month'
+    },
+    weekdays: {
+      0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday', 6: 'Saturday'
     },
     standingOrders: {
       title: 'Standing Orders', addStandingOrder: '+ Add standing order',
@@ -165,7 +170,7 @@ const translations = {
       transactionsHeading: 'Transactions',
       transactionsBody: 'The full history of money in and out. Add income or expenses, transfer money between your own accounts, and filter by account, category, or month. CSV export/import moved to Settings → Data, to keep this page focused on your day-to-day entries. If a note mentions another account of yours (e.g. paying off a credit card), a small hint appears suggesting + Transfer instead — a Transaction can only ever touch one account.',
       billsHeading: 'Bills',
-      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, due day, and which account/category it comes from. Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date. Tick "This is a subscription" (or use the "Sub" button on an existing bill) to tag things like Netflix or Spotify — a running monthly subscription total and a filter to show just those appears above the list once you\'ve tagged at least one.',
+      billsBody: 'Recurring expenses like rent, subscriptions, or utilities. Add a bill once with its amount, how often it repeats, and which account/category it comes from. Most bills repeat Monthly (pick a due day, 1-31), but some — like a weekly cleaner or a gym class — repeat Weekly instead (pick a day of the week; it\'ll come round every week rather than once a month). Once its due date arrives, Budgeter automatically creates the transaction and deducts it from that account for you — no need to mark it paid yourself. This happens the next time you open the app on or after the due date (there\'s no way for it to happen while the app is fully closed). "Undo" removes it if something looks wrong; you can still mark a bill paid early yourself if you\'ve already paid it before the due date. Tick "This is a subscription" (or use the "Sub" button on an existing bill) to tag things like Netflix or Spotify — a running monthly subscription total and a filter to show just those appears above the list once you\'ve tagged at least one (weekly subscriptions are converted to a monthly-equivalent so the total stays meaningful).',
       standingOrdersHeading: 'Standing Orders',
       standingOrdersBody: "The UK banking term for a recurring transfer between two of your own accounts — for example, moving £200 into savings on the 1st of every month. Works exactly like Bills, but moves money between your own accounts instead of paying an expense, so it never counts as income or spending and correctly updates both accounts' balances. Use this (not a Bill, and not a category) for anything that's really just you moving your own money around.",
       budgetsHeading: 'Budgets',
@@ -294,12 +299,17 @@ const translations = {
       empty: 'Aún no hay facturas. Añade el alquiler, suscripciones o servicios para ver lo que vence.',
       paid: 'Pagada', overdue: 'Vencida hace {n}d', dueToday: 'Vence hoy', dueIn: 'Vence en {n}d',
       markPaid: 'Marcar como pagada', undo: 'Deshacer', dueDayLabel: 'día de vencimiento {n}',
+      dueWeekdayLabel: 'vence el {day}', frequencyLabel: 'Repite', frequencyMonthly: 'Mensual',
+      frequencyWeekly: 'Semanal', dueWeekdaySelectLabel: 'Día de la semana de vencimiento',
       subscriptionCheckbox: 'Es una suscripción (Netflix, Spotify, gimnasio, etc.)',
       subscriptionBadge: 'Suscripción',
       subscriptionToggle: 'Sus', subscriptionOnHint: 'Marcada como suscripción — pulsa para desmarcar',
       subscriptionOffHint: 'No marcada como suscripción — pulsa para marcar',
       subscriptionsOnly: 'Mostrar solo suscripciones',
       subscriptionTotal: '{count} suscripciones · {amt}/mes'
+    },
+    weekdays: {
+      0: 'domingo', 1: 'lunes', 2: 'martes', 3: 'miércoles', 4: 'jueves', 5: 'viernes', 6: 'sábado'
     },
     standingOrders: {
       title: 'Órdenes permanentes', addStandingOrder: '+ Añadir orden permanente',
@@ -374,7 +384,7 @@ const translations = {
       transactionsHeading: 'Transacciones',
       transactionsBody: 'El historial completo de dinero que entra y sale. Añade ingresos o gastos, transfiere dinero entre tus propias cuentas, y filtra por cuenta, categoría o mes. La exportación/importación CSV se trasladó a Ajustes → Datos, para mantener esta página centrada en tus movimientos del día a día. Si una nota menciona otra cuenta tuya (p. ej. pagar una tarjeta de crédito), aparece un pequeño aviso sugiriendo usar + Transferencia en su lugar — una Transacción solo puede afectar a una cuenta.',
       billsHeading: 'Facturas',
-      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, día de vencimiento y de qué cuenta/categoría proviene. Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento. Marca "Es una suscripción" (o usa el botón "Sus" en una factura ya creada) para etiquetar cosas como Netflix o Spotify — un total mensual de suscripciones y un filtro para mostrar solo esas aparece encima de la lista en cuanto etiquetes al menos una.',
+      billsBody: 'Gastos recurrentes como el alquiler, suscripciones o servicios. Añade una factura una vez con su importe, con qué frecuencia se repite y de qué cuenta/categoría proviene. La mayoría de las facturas se repiten Mensualmente (elige un día de vencimiento, 1-31), pero algunas — como una limpiadora semanal o una clase de gimnasio — se repiten Semanalmente en su lugar (elige un día de la semana; volverá cada semana en lugar de una vez al mes). Cuando llega su fecha de vencimiento, Budgeter crea la transacción automáticamente y la descuenta de esa cuenta por ti — no necesitas marcarla como pagada. Esto ocurre la próxima vez que abras la app en o después de la fecha de vencimiento (no puede ocurrir mientras la app está completamente cerrada). "Deshacer" la elimina si algo no parece correcto; aún puedes marcar una factura como pagada tú mismo si ya la pagaste antes de su vencimiento. Marca "Es una suscripción" (o usa el botón "Sus" en una factura ya creada) para etiquetar cosas como Netflix o Spotify — un total mensual de suscripciones y un filtro para mostrar solo esas aparece encima de la lista en cuanto etiquetes al menos una (las suscripciones semanales se convierten a un equivalente mensual para que el total tenga sentido).',
       standingOrdersHeading: 'Órdenes permanentes',
       standingOrdersBody: 'El término bancario del Reino Unido para una transferencia recurrente entre dos de tus propias cuentas — por ejemplo, mover 200 £ a ahorros el día 1 de cada mes. Funciona igual que las Facturas, pero mueve dinero entre tus propias cuentas en lugar de pagar un gasto, por lo que nunca cuenta como ingreso o gasto y actualiza correctamente el saldo de ambas cuentas. Usa esto (no una Factura, ni una categoría) para cualquier cosa que en realidad sea simplemente mover tu propio dinero.',
       budgetsHeading: 'Presupuestos',

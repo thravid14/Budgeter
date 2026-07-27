@@ -808,9 +808,22 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
         <input type="number" step="0.01" min="0" id="bill-amount" placeholder="0.00" />
       </div>
       <div class="form-field">
-        <label>Due day of month</label>
-        <input type="number" min="1" max="31" id="bill-due-day" placeholder="e.g. 1" />
+        <label>${t('bills.frequencyLabel')}</label>
+        <select id="bill-frequency">
+          <option value="monthly">${t('bills.frequencyMonthly')}</option>
+          <option value="weekly">${t('bills.frequencyWeekly')}</option>
+        </select>
       </div>
+    </div>
+    <div class="form-field" id="bill-due-day-field">
+      <label>Due day of month</label>
+      <input type="number" min="1" max="31" id="bill-due-day" placeholder="e.g. 1" />
+    </div>
+    <div class="form-field" id="bill-due-weekday-field" style="display:none">
+      <label>${t('bills.dueWeekdaySelectLabel')}</label>
+      <select id="bill-due-weekday">
+        ${[0, 1, 2, 3, 4, 5, 6].map(d => `<option value="${d}">${t(`weekdays.${d}`)}</option>`).join('')}
+      </select>
     </div>
     <div class="form-row">
       <div class="form-field">
@@ -831,19 +844,34 @@ document.getElementById('btn-add-bill').addEventListener('click', async () => {
     </div>
   `);
 
+  const freqSelect = document.getElementById('bill-frequency');
+  const dueDayField = document.getElementById('bill-due-day-field');
+  const dueWeekdayField = document.getElementById('bill-due-weekday-field');
+  const toggleFreqFields = () => {
+    const isWeekly = freqSelect.value === 'weekly';
+    dueDayField.style.display = isWeekly ? 'none' : '';
+    dueWeekdayField.style.display = isWeekly ? '' : 'none';
+  };
+  freqSelect.addEventListener('change', toggleFreqFields);
+  toggleFreqFields();
+
   document.getElementById('bill-cancel').addEventListener('click', closeModal);
   document.getElementById('bill-save').addEventListener('click', async () => {
     const name = document.getElementById('bill-name').value.trim();
     const amount = document.getElementById('bill-amount').value;
+    const frequency = freqSelect.value;
     const dueDay = document.getElementById('bill-due-day').value;
+    const dueWeekday = document.getElementById('bill-due-weekday').value;
     if (!name) { alert('Enter a bill name.'); return; }
     if (!amount || Number(amount) <= 0) { alert('Enter an amount greater than 0.'); return; }
-    if (!dueDay || dueDay < 1 || dueDay > 31) { alert('Enter a due day between 1 and 31.'); return; }
+    if (frequency === 'monthly' && (!dueDay || dueDay < 1 || dueDay > 31)) { alert('Enter a due day between 1 and 31.'); return; }
 
     await addBill({
       name,
       amount,
+      frequency,
       dueDay,
+      dueWeekday,
       accountId: document.getElementById('bill-account').value,
       categoryId: document.getElementById('bill-category').value,
       isSubscription: document.getElementById('bill-subscription').checked
@@ -1192,8 +1220,8 @@ document.addEventListener('click', async (e) => {
     showToast(t('toast.billPaid'));
   }
   if (btn.dataset.action === 'unpay-bill') {
-    const month = btn.dataset.month;
-    await markBillUnpaid(id, month);
+    const txId = Number(btn.dataset.txId);
+    await deleteTransaction(txId);
     refreshCurrentView();
     showToast(t('toast.billUnpaid'));
   }
